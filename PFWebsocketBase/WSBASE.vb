@@ -52,7 +52,7 @@ Namespace PFWebsocketBase
 #If DEBUG Then
             Public EnableDebugOutput As Boolean = True
 #Else
-             Public EnableDebugOutput As Boolean = false
+            Public EnableDebugOutput As Boolean = False
 #End If
             Public PlayerLeftCallback As Boolean = True
             Public PlayerJoinCallback As Boolean = True

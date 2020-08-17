@@ -213,22 +213,23 @@ namespace PFWebsocketAPI
             try
             {
                 #region 加载
-                cmdTimer.Interval = WSBASE.Config.CMDInterval;
-                cmdTimer.Elapsed += CmdTimer_Elapsed;
                 #region INFO
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.BackgroundColor = ConsoleColor.DarkBlue;
                 try
                 {
                     string[] authorsInfo = new string[] {
-                        "███████████████████████████" ,
+                        "████████████████████████████" ,
                         "正在裝載PFWebsocketAPI",
                         "作者        gxh2004",
                         "版本信息    v" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString() ,
                         "适用于bds1.16(CSRV0.1.16.20.3v4编译)"  ,
                         "如版本不同可能存在问题" ,
                         "当前CSRunnerAPI版本:" + api.VERSION  ,
-                        "███████████████████████████"
+                        "配置文件位于\"[BDS目录]\\plugins\\PFWebsocket\\config.json\"",
+                        "请修改配置文件后使用，尤其是Password和endpoint",
+                        "以免被他人入侵",
+                        "████████████████████████████"
                     };
                     Func<string, int> GetLength = (input) => { return Encoding.GetEncoding("GBK").GetByteCount(input); };
                     int infoLength = 0;
@@ -243,8 +244,9 @@ namespace PFWebsocketAPI
                 catch (Exception) { }
                 ResetConsoleColor();
                 #endregion
-
-#if !DEBUG
+                cmdTimer.Interval = WSBASE.Config.CMDInterval;
+                cmdTimer.Elapsed += CmdTimer_Elapsed;
+ #if !DEBUG
                 #region EULA 
                 string eulaPath = Path.GetDirectoryName(WSBASE.ConfigPath) + "\\EULA";
                 string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -253,7 +255,7 @@ namespace PFWebsocketAPI
                 {
                     if (File.Exists(eulaPath))
                     {
-                        if (Encoding.UTF32.GetString(File.ReadAllBytes(eulaPath)) != WSTools.GetMD5(WSTools.StringToUnicode(eulaINFO.ToString()) ))
+                        if (Encoding.UTF32.GetString(File.ReadAllBytes(eulaPath)) != WSTools.GetMD5(WSTools.StringToUnicode(eulaINFO.ToString())))
                         {
                             WriteLineERR("EULA", "使用条款需要更新!");
                             File.Delete(eulaPath);
