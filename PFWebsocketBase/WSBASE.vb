@@ -15,7 +15,7 @@ Namespace PFWebsocketBase
                 Return ServerData
             End Get
         End Property
-        Private ReadOnly Property ConfigPath As String
+        Public ReadOnly Property ConfigPath As String
             Get
                 Return Environment.CurrentDirectory & "\plugins\PFWebsocket\config.json"
             End Get
