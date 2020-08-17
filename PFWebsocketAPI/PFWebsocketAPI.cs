@@ -126,7 +126,7 @@ namespace PFWebsocketAPI
         //        }
         #endregion
         public static Queue<WSAPImodel.ExecuteCmdModel> cmdQueue = new Queue<WSAPImodel.ExecuteCmdModel>();
-        private static Timer cmdTimer = new Timer(100) { AutoReset = true, Enabled = false };
+        private static Timer cmdTimer = new Timer() { AutoReset = true, Enabled = false };
         private static MCCSAPI.EventCab CmdCallBack = e =>
         {
             try
@@ -179,22 +179,21 @@ namespace PFWebsocketAPI
                 if (CmdOutput == null)
                 {
                     CmdOutput = cmdQueue.Dequeue();
-                    WriteLine(CmdOutput.cmd);
                     ListeningOutPut = true;
                     api.runcmd(CmdOutput.cmd);
                 }
                 else
                 {
+                    if (!ListeningOutPut) return;
                     if (CmdOutput.Result == null)
-                    {
-                        //指令超时检测
-                        if (CmdOutput.waitTimes >= WSBASE.Config.CMDTimeout * 10)
+                    {     //指令超时检测
+                        CmdOutput.waitTimes++;
+                        if (CmdOutput.waitTimes * WSBASE.Config.CMDInterval > WSBASE.Config.CMDTimeout)
                         {
                             CmdOutput.Result = "";
                             CmdOutput = null;
                             if (cmdQueue.Count == 0) { ListeningOutPut = false; }
                         }
-                        CmdOutput.waitTimes++;
                     }
                 }
             }
@@ -212,6 +211,7 @@ namespace PFWebsocketAPI
             try
             {
                 #region 加载
+                cmdTimer.Interval = WSBASE.Config.CMDInterval;
                 cmdTimer.Elapsed += CmdTimer_Elapsed;
                 #region INFO
                 Console.ForegroundColor = ConsoleColor.Cyan;
@@ -268,8 +268,7 @@ namespace PFWebsocketAPI
                 {
                     api.addAfterActListener(EventKey.onLoadName, eventraw =>
                     {
-                        try
-                        { return true; }
+                        try { return true; }
                         finally
                         {
                             try
@@ -282,13 +281,13 @@ namespace PFWebsocketAPI
                             { WriteLineERR("PlayerJoinCallback", err); }
                         }
                     });
+                    WriteLine("已开启PlayerJoinCallback监听");
                 }
                 if (WSBASE.Config.PlayerLeftCallback)
                 {
                     api.addAfterActListener(EventKey.onPlayerLeft, eventraw =>
                     {
-                        try
-                        { return true; }
+                        try { return true; }
                         finally
                         {
                             try
@@ -301,13 +300,13 @@ namespace PFWebsocketAPI
                             { WriteLineERR("PlayerLeftCallback", err); }
                         }
                     });
+                    WriteLine("已开启PlayerLeftCallback监听");
                 }
                 if (WSBASE.Config.PlayerCmdCallback)
                 {
                     api.addAfterActListener(EventKey.onInputCommand, eventraw =>
                     {
-                        try
-                        { return true; }
+                        try { return true; }
                         finally
                         {
                             try
@@ -319,7 +318,7 @@ namespace PFWebsocketAPI
                             catch (Exception err)
                             { WriteLineERR("PlayerCmdCallback", err); }
                         }
-                    });
+                    }); WriteLine("已开启PlayerCmdCallback监听");
                 }
                 if (WSBASE.Config.PlayerMessageCallback)
                 {
@@ -332,7 +331,6 @@ namespace PFWebsocketAPI
                             try
                             {
                                 var e = BaseEvent.getFrom(eventraw) as ChatEvent;
-                                Console.WriteLine(e.chatstyle);
                                 if (e.chatstyle == "chat")
                                 {
                                     var sendData = new WSAPImodel.SendModel(WSAPImodel.SendType.onmsg, e.playername, e.msg);
@@ -342,7 +340,7 @@ namespace PFWebsocketAPI
                             catch (Exception err)
                             { WriteLineERR("PlayerMessageCallback", err); }
                         }
-                    });
+                    }); WriteLine("已开启PlayerMessageCallback监听");
                 }
                 #endregion
             }

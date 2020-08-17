@@ -47,7 +47,8 @@ Namespace PFWebsocketBase
         End Property
         Public Class ConfigModel
             Public Port As String = "29132", EndPoint As String = "mcws", Password As String = "pwd"
-            Public CMDTimeout As Integer = 8
+            Public CMDTimeout As Double = 3000
+            Public CMDInterval As Double = 200
 #If DEBUG Then
             Public EnableDebugOutput As Boolean = True
 #Else
