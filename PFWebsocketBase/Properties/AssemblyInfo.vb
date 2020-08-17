@@ -4,11 +4,11 @@ Imports System.Runtime.InteropServices
 ' 有关程序集的一般信息由以下
 ' 控制。更改这些特性值可修改
 ' 与程序集关联的信息。
-<Assembly: AssemblyTitle("PFWebsocketAPI")>
+<Assembly: AssemblyTitle("PFWebsocketBase")>
 <Assembly: AssemblyDescription("")>
 <Assembly: AssemblyConfiguration("")>
 <Assembly: AssemblyCompany("")>
-<Assembly: AssemblyProduct("PFWebsocketAPI")>
+<Assembly: AssemblyProduct("PFWebsocketBase")>
 <Assembly: AssemblyCopyright("Copyright ©  2020")>
 <Assembly: AssemblyTrademark("")>
 <Assembly: AssemblyCulture("")>
@@ -19,7 +19,7 @@ Imports System.Runtime.InteropServices
 <Assembly: ComVisible(False)>
 
 ' 如果此项目向 COM 公开，则下列 GUID 用于类型库的 ID
-<Assembly: Guid("95e4503b-bf15-499b-b5b2-fc0f3e425a3e")>
+<Assembly: Guid("eb39b4b0-55f4-4398-b2f1-5ebd0808164b")>
 
 ' 程序集的版本信息由下列四个值组成: 
 '
