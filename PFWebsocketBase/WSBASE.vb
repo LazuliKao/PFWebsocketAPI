@@ -1,7 +1,9 @@
 ﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
+Imports System.Threading
 Imports Fleck
+Imports Microsoft.VisualBasic
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
 
@@ -29,6 +31,28 @@ Namespace PFWebsocketBase
                         WriteLine("读取配置文件 << ""plugins\PFWebsocket\config.json""")
                         WriteLine("配置文件内容 >> " & configData.ToString())
                     Else
+                        Try
+                            Dim windowShowing = False
+                            Dim waitForComplete As AutoResetEvent = New AutoResetEvent(False)
+                            Dim uithread As Thread = New Thread(Sub()
+                                                                    Dim dialog As PFWebsocketWindows.Setup = New PFWebsocketWindows.Setup
+                                                                    dialog.ShowDialog()
+                                                                    waitForComplete.Set()
+                                                                End Sub)
+                            uithread.SetApartmentState(ApartmentState.STA)
+                            WriteLine("████████████████████")
+                            WriteLine("█请在弹出窗口中输入Websocket配置信息 █")
+                            WriteLine("████████████████████")
+                            uithread.Start()
+                            waitForComplete.WaitOne()
+                        Catch ex As Exception
+                            WriteLineERR("uithread", ex)
+                        End Try
+                        'uithread.Start(Sub()
+                        '                   Dim dialog As PFWebsocketWindows.Setup = New PFWebsocketWindows.Setup
+                        '                   dialog.ShowDialog()
+                        '               End Sub)
+
                         WSBASE.Config = New ConfigModel()
                         WriteLine("输出默认配置 >> " & configData.ToString())
                     End If
