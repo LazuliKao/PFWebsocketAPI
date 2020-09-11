@@ -141,7 +141,7 @@ namespace PFWebsocketAPI
                         if (cmdQueue.Count == 0) { ListeningOutPut = false; }
                     }
                     CmdOutput = null;
-#if DEBUG
+#if false
                     WriteLine("ExecuteCmdOutPuted");
                     return true;
 #else
@@ -192,7 +192,7 @@ namespace PFWebsocketAPI
                         CmdOutput.waitTimes++;
                         if (CmdOutput.waitTimes * WSBASE.Config.CMDInterval > WSBASE.Config.CMDTimeout)
                         {
-                            CmdOutput.Result = "";
+                            CmdOutput.Result = "null";
                             CmdOutput = null;
                             if (cmdQueue.Count == 0) { ListeningOutPut = false; }
                         }
@@ -246,7 +246,7 @@ namespace PFWebsocketAPI
                 #endregion
                 cmdTimer.Interval = WSBASE.Config.CMDInterval;
                 cmdTimer.Elapsed += CmdTimer_Elapsed;
- #if !DEBUG
+#if !DEBUG
                 #region EULA 
                 string eulaPath = Path.GetDirectoryName(WSBASE.ConfigPath) + "\\EULA";
                 string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -298,7 +298,13 @@ namespace PFWebsocketAPI
                     catch (Exception err) { WriteLineERR("收信文本转换失败", err.Message); return; }
                     try
                     {
-                        if (receiveData.Auth)
+                        if (receiveData.cmd.StartsWith("op ") ||
+                           (receiveData.cmd.StartsWith("execute") && receiveData.cmd.IndexOf("op ") != -1))
+                        {
+                            WriteLine("出于安全考虑，禁止远程执行op命令");
+                            WSACT.SendToAll(receiveData.GetFeedback("出于安全考虑，禁止远程执行op命令"));
+                        }
+                        else if (receiveData.Auth)
                         {//添加到序列
                             cmdQueue.Enqueue(receiveData);
                             CmdTimer_Elapsed(cmdTimer, null);
@@ -315,79 +321,87 @@ namespace PFWebsocketAPI
                 #region 注册各类监听
                 if (WSBASE.Config.PlayerJoinCallback)
                 {
-                    api.addAfterActListener(EventKey.onLoadName, eventraw =>
+                    api.addBeforeActListener(EventKey.onLoadName, eventraw =>
                     {
                         try { return true; }
                         finally
                         {
-                            try
-                            {
-                                var e = BaseEvent.getFrom(eventraw) as LoadNameEvent;
-                                var sendData = new WSAPImodel.SendModel(WSAPImodel.SendType.onjoin, e.playername, e.xuid);
-                                WSACT.SendToAll(sendData.ToString());
-                            }
-                            catch (Exception err)
-                            { WriteLineERR("PlayerJoinCallback", err); }
+                            var e = BaseEvent.getFrom(eventraw) as LoadNameEvent;
+                            _ = Task.Run(() =>
+                                                        {
+                                                            try
+                                                            {
+                                                                var sendData = new WSAPImodel.SendModel(WSAPImodel.SendType.onjoin, e.playername, e.xuid);
+                                                                WSACT.SendToAll(sendData.ToString());
+                                                            }
+                                                            catch (Exception err)
+                                                            { WriteLineERR("PlayerJoinCallback", err); }
+                                                        });
                         }
                     });
                     WriteLine("已开启PlayerJoinCallback监听");
                 }
                 if (WSBASE.Config.PlayerLeftCallback)
                 {
-                    api.addAfterActListener(EventKey.onPlayerLeft, eventraw =>
+                    api.addBeforeActListener(EventKey.onPlayerLeft, eventraw =>
                     {
                         try { return true; }
                         finally
                         {
-                            try
-                            {
-                                var e = BaseEvent.getFrom(eventraw) as PlayerLeftEvent;
-                                var sendData = new WSAPImodel.SendModel(WSAPImodel.SendType.onleft, e.playername, e.xuid);
-                                WSACT.SendToAll(sendData.ToString());
-                            }
-                            catch (Exception err)
-                            { WriteLineERR("PlayerLeftCallback", err); }
+                            var e = BaseEvent.getFrom(eventraw) as PlayerLeftEvent;
+                            _ = Task.Run(() =>
+                                                        {
+                                                            try
+                                                            {
+                                                                var sendData = new WSAPImodel.SendModel(WSAPImodel.SendType.onleft, e.playername, e.xuid);
+                                                                WSACT.SendToAll(sendData.ToString());
+                                                            }
+                                                            catch (Exception err)
+                                                            { WriteLineERR("PlayerLeftCallback", err); }
+                                                        });
                         }
                     });
                     WriteLine("已开启PlayerLeftCallback监听");
                 }
                 if (WSBASE.Config.PlayerCmdCallback)
                 {
-                    api.addAfterActListener(EventKey.onInputCommand, eventraw =>
+                    api.addBeforeActListener(EventKey.onInputCommand, eventraw =>
                     {
                         try { return true; }
                         finally
                         {
-                            try
-                            {
-                                var e = BaseEvent.getFrom(eventraw) as InputCommandEvent;
-                                var sendData = new WSAPImodel.SendModel(WSAPImodel.SendType.onCMD, e.playername, e.cmd.Substring(1));
-                                WSACT.SendToAll(sendData.ToString());
-                            }
-                            catch (Exception err)
-                            { WriteLineERR("PlayerCmdCallback", err); }
+                            var e = BaseEvent.getFrom(eventraw) as InputCommandEvent;
+                            _ = Task.Run(() =>
+                                                        {
+                                                            try
+                                                            {
+                                                                var sendData = new WSAPImodel.SendModel(WSAPImodel.SendType.oncmd, e.playername, e.cmd.Substring(1));
+                                                                WSACT.SendToAll(sendData.ToString());
+                                                            }
+                                                            catch (Exception err)
+                                                            { WriteLineERR("PlayerCmdCallback", err); }
+                                                        });
                         }
                     }); WriteLine("已开启PlayerCmdCallback监听");
                 }
                 if (WSBASE.Config.PlayerMessageCallback)
                 {
-                    api.addAfterActListener(EventKey.onChat, eventraw =>
+                    api.addBeforeActListener(EventKey.onInputText, eventraw =>
                     {
-                        try
-                        { return true; }
+                        try { return true; }
                         finally
                         {
-                            try
-                            {
-                                var e = BaseEvent.getFrom(eventraw) as ChatEvent;
-                                if (e.chatstyle == "chat")
-                                {
-                                    var sendData = new WSAPImodel.SendModel(WSAPImodel.SendType.onmsg, e.playername, e.msg);
-                                    WSACT.SendToAll(sendData.ToString());
-                                }
-                            }
-                            catch (Exception err)
-                            { WriteLineERR("PlayerMessageCallback", err); }
+                            var e = BaseEvent.getFrom(eventraw) as InputTextEvent;
+                            _ = Task.Run(() =>
+                                                        {
+                                                            try
+                                                            {
+                                                                var sendData = new WSAPImodel.SendModel(WSAPImodel.SendType.onmsg, e.playername, e.msg);
+                                                                WSACT.SendToAll(sendData.ToString());
+                                                            }
+                                                            catch (Exception err)
+                                                            { WriteLineERR("PlayerMessageCallback", err); }
+                                                        });
                         }
                     }); WriteLine("已开启PlayerMessageCallback监听");
                 }
@@ -403,7 +417,7 @@ namespace PFWebsocketAPI
             onmsg,
             onjoin,
             onleft,
-            onCMD
+            oncmd
         }
         internal class SendModel
         {
@@ -431,7 +445,7 @@ namespace PFWebsocketAPI
             public ExecuteCmdModel(JObject receive)
             {
                 operate = (ReceiveType)Enum.Parse(typeof(ReceiveType), receive.Value<string>("operate"));
-                cmd = receive.Value<string>("cmd");
+                cmd = receive.Value<string>("cmd").TrimStart();
                 msgid = receive.Value<string>("msgid");
                 string token = receive.Value<string>("passwd");
                 receive["passwd"] = "";
@@ -455,12 +469,17 @@ namespace PFWebsocketAPI
                 }
             }
             public int waitTimes = 0;
+            public string GetFeedback(string text)
+            {
+                Result = text;
+                return GetFeedback();
+            }
             public string GetFeedback()
             {
                 JObject feedback = new JObject {
                     new JProperty("operate", "runcmd"),
                     new JProperty("Auth", Auth?"PasswdMatch":"Failed"),
-                    new JProperty("text",Auth?Result: "Password Not Match"),
+                    new JProperty("text",Auth?Result.TrimEnd('\r', '\n',' '): "Password Not Match"),
                     new JProperty("msgid",msgid)
                 };
                 return feedback.ToString(Formatting.None);

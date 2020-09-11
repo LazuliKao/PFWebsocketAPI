@@ -6,10 +6,18 @@ Imports Fleck
 Imports Microsoft.VisualBasic
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
+Imports MaterialDesignExtensions.Controls
 
 Namespace PFWebsocketBase
     Public Module WSBASE
-        Public wsConnections As List(Of IWebSocketConnection) = New List(Of IWebSocketConnection)()
+        Public wsConnections As List(Of WebsocketConnection) = New List(Of WebsocketConnection)()
+        Public Class WebsocketConnection
+            Public connection As IWebSocketConnection
+            Public avaliable As Boolean = True
+            Public Sub New(con As IWebSocketConnection)
+                connection = con
+            End Sub
+        End Class
         Private ServerData As WebSocketServer = Nothing
         Public ReadOnly Property Server As WebSocketServer
             Get
@@ -35,9 +43,13 @@ Namespace PFWebsocketBase
                             Dim windowShowing = False
                             Dim waitForComplete As AutoResetEvent = New AutoResetEvent(False)
                             Dim uithread As Thread = New Thread(Sub()
-                                                                    Dim dialog As PFWebsocketWindows.Setup = New PFWebsocketWindows.Setup
-                                                                    dialog.ShowDialog()
-                                                                    waitForComplete.Set()
+                                                                    Try
+                                                                        Dim dialog As PFWebsocketWindows.Setup = New PFWebsocketWindows.Setup
+                                                                        dialog.ShowDialog()
+                                                                        waitForComplete.Set()
+                                                                    Catch ex As Exception
+                                                                        WriteLineERR("uithread", ex)
+                                                                    End Try
                                                                 End Sub)
                             uithread.SetApartmentState(ApartmentState.STA)
                             WriteLine("████████████████████")
@@ -46,13 +58,12 @@ Namespace PFWebsocketBase
                             uithread.Start()
                             waitForComplete.WaitOne()
                         Catch ex As Exception
-                            WriteLineERR("uithread", ex)
+                            WriteLineERR("uithread-create", ex)
                         End Try
                         'uithread.Start(Sub()
                         '                   Dim dialog As PFWebsocketWindows.Setup = New PFWebsocketWindows.Setup
                         '                   dialog.ShowDialog()
                         '               End Sub)
-
                         WSBASE.Config = New ConfigModel()
                         WriteLine("输出默认配置 >> " & configData.ToString())
                     End If
@@ -65,13 +76,13 @@ Namespace PFWebsocketBase
                     Directory.CreateDirectory(Path.GetDirectoryName(ConfigPath))
                     WriteLine("创建插件目录 >> ""plugins\PFWebsocket\")
                 End If
-                File.WriteAllText(ConfigPath, configData.ToString())
+                File.WriteAllText(ConfigPath, configData.ToString(Formatting.Indented))
                 WriteLine("写入配置文件 >> ""plugins\PFWebsocket\config.json""")
             End Set
         End Property
         Public Class ConfigModel
             Public Port As String = "29132", EndPoint As String = "mcws", Password As String = "pwd"
-            Public CMDTimeout As Double = 3000
+            Public CMDTimeout As Double = 1800
             Public CMDInterval As Double = 200
 #If DEBUG Then
             Public EnableDebugOutput As Boolean = True
@@ -82,8 +93,12 @@ Namespace PFWebsocketBase
             Public PlayerJoinCallback As Boolean = True
             Public PlayerMessageCallback As Boolean = True
             Public PlayerCmdCallback As Boolean = True
+            Public QuietConsole As Boolean = False
             Public Overrides Function ToString() As String
                 Return JObject.FromObject(Me).ToString(Formatting.None)
+            End Function
+            Public Overloads Function ToString(formatting As Formatting) As String
+                Return JObject.FromObject(Me).ToString(formatting)
             End Function
         End Class
     End Module

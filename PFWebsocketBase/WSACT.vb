@@ -74,12 +74,20 @@ Namespace PFWebsocketBase
         End Sub
 #End Region
         Public Sub SendToAll(ByVal sendMsg As String)
-            For Each client In wsConnections
+            For i = 0 To wsConnections.Count - 1
                 Try
-                    client.Send(sendMsg)
-                    WriteLine("Send", sendMsg)
+                    For index = 1 To 200
+                        If wsConnections(i).avaliable Then
+                            wsConnections(i).avaliable = False
+                            Exit For
+                        End If
+                        Thread.Sleep(50)
+                    Next
+                    wsConnections(i).connection.Send(sendMsg)
+                    wsConnections(i).avaliable = True
+                    If Not Config.QuietConsole Then WriteLine("Send", sendMsg)
                 Catch ex As Exception
-                    WriteLineERR($"Server发送到Client({client.ConnectionInfo.Id})失败", ex)
+                    WriteLineERR($"Server发送到Client({wsConnections(i).connection.ConnectionInfo.Id})失败", ex)
                 End Try
             Next
         End Sub
@@ -107,16 +115,16 @@ Namespace PFWebsocketBase
                              connection.OnMessage =
                              Sub(msg)
                                  OnMessage.Invoke(msg)
-                                 WriteLine("receive", msg)
+                                 If Not Config.QuietConsole Then WriteLine("receive", msg)
                              End Sub
                              connection.OnOpen =
                              Sub()
-                                 wsConnections.Add(connection)
+                                 wsConnections.Add(New WebsocketConnection(connection))
                                  WriteLine($"与{connection.ConnectionInfo.Id}({connection.ConnectionInfo.ClientIpAddress}:{connection.ConnectionInfo.ClientPort})建立连接")
                              End Sub
                              connection.OnClose =
                              Sub()
-                                 wsConnections.Remove(connection)
+                                 wsConnections.Remove(New WebsocketConnection(connection))
                                  WriteLine($"与{connection.ConnectionInfo.Id}({connection.ConnectionInfo.ClientIpAddress}:{connection.ConnectionInfo.ClientPort})断开连接")
                              End Sub
                              'connection.OnError =
