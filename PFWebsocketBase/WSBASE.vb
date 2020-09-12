@@ -7,6 +7,7 @@ Imports Microsoft.VisualBasic
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
 Imports MaterialDesignExtensions.Controls
+Imports PFWebsocketWindows
 
 Namespace PFWebsocketBase
     Public Module WSBASE
@@ -40,11 +41,13 @@ Namespace PFWebsocketBase
                         WriteLine("配置文件内容 >> " & configData.ToString())
                     Else
                         Try
-                            Dim windowShowing = False
-                            Dim waitForComplete As AutoResetEvent = New AutoResetEvent(False)
+                            Dim waitForComplete = New AutoResetEvent(False)
                             Dim uithread As Thread = New Thread(Sub()
                                                                     Try
-                                                                        Dim dialog As PFWebsocketWindows.Setup = New PFWebsocketWindows.Setup
+                                                                        Dim dialog = New PFWebsocketWindows.Setup
+                                                                        WriteLine("████████████████████")
+                                                                        WriteLine("█请在弹出窗口中输入Websocket配置信息 █")
+                                                                        WriteLine("████████████████████")
                                                                         dialog.ShowDialog()
                                                                         waitForComplete.Set()
                                                                     Catch ex As Exception
@@ -52,11 +55,40 @@ Namespace PFWebsocketBase
                                                                     End Try
                                                                 End Sub)
                             uithread.SetApartmentState(ApartmentState.STA)
-                            WriteLine("████████████████████")
-                            WriteLine("█请在弹出窗口中输入Websocket配置信息 █")
-                            WriteLine("████████████████████")
                             uithread.Start()
                             waitForComplete.WaitOne()
+                            If Setup.configSuccess Then
+                                WSBASE.Config = Setup.ConfigData
+                                WriteLine("输出生成配置 >> " & configData.ToString())
+                            Else
+                                WSBASE.Config = New ConfigModel()
+                                WriteLine("输出默认配置 >> " & configData.ToString())
+                            End If
+
+                            'Dim windowShowing = False
+                            'Dim dialog As PFWebsocketWindows.Setup = New PFWebsocketWindows.Setup
+                            'dialog.waitForComplete = New AutoResetEvent(False)
+                            'Dim uithread As Thread = New Thread(Sub()
+                            '                                        Try
+                            '                                            WriteLine("████████████████████")
+                            '                                            WriteLine("█请在弹出窗口中输入Websocket配置信息 █")
+                            '                                            WriteLine("████████████████████")
+                            '                                            dialog.ShowDialog()
+                            '                                            dialog.waitForComplete.Set()
+                            '                                        Catch ex As Exception
+                            '                                            WriteLineERR("uithread", ex)
+                            '                                        End Try
+                            '                                    End Sub)
+                            'uithread.SetApartmentState(ApartmentState.STA)
+                            'uithread.Start()
+                            'dialog.waitForComplete.WaitOne()
+                            'If dialog.configSuccess Then
+                            '    WSBASE.Config = dialog.ConfigData
+                            '    WriteLine("输出生成配置 >> " & configData.ToString())
+                            'Else
+                            '    WSBASE.Config = New ConfigModel()
+                            '    WriteLine("输出默认配置 >> " & configData.ToString())
+                            'End If
                         Catch ex As Exception
                             WriteLineERR("uithread-create", ex)
                         End Try
@@ -64,8 +96,6 @@ Namespace PFWebsocketBase
                         '                   Dim dialog As PFWebsocketWindows.Setup = New PFWebsocketWindows.Setup
                         '                   dialog.ShowDialog()
                         '               End Sub)
-                        WSBASE.Config = New ConfigModel()
-                        WriteLine("输出默认配置 >> " & configData.ToString())
                     End If
                 End If
                 Return configData
@@ -80,26 +110,5 @@ Namespace PFWebsocketBase
                 WriteLine("写入配置文件 >> ""plugins\PFWebsocket\config.json""")
             End Set
         End Property
-        Public Class ConfigModel
-            Public Port As String = "29132", EndPoint As String = "mcws", Password As String = "pwd"
-            Public CMDTimeout As Double = 1800
-            Public CMDInterval As Double = 200
-#If DEBUG Then
-            Public EnableDebugOutput As Boolean = True
-#Else
-            Public EnableDebugOutput As Boolean = False
-#End If
-            Public PlayerLeftCallback As Boolean = True
-            Public PlayerJoinCallback As Boolean = True
-            Public PlayerMessageCallback As Boolean = True
-            Public PlayerCmdCallback As Boolean = True
-            Public QuietConsole As Boolean = False
-            Public Overrides Function ToString() As String
-                Return JObject.FromObject(Me).ToString(Formatting.None)
-            End Function
-            Public Overloads Function ToString(formatting As Formatting) As String
-                Return JObject.FromObject(Me).ToString(formatting)
-            End Function
-        End Class
     End Module
 End Namespace

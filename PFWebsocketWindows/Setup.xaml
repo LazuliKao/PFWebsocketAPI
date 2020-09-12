@@ -35,15 +35,15 @@
             </Style>
             <Style TargetType="TextBox" BasedOn="{StaticResource MaterialDesignFloatingHintTextBox}">
                 <Setter Property="Foreground" Value="Wheat" />
-                <Setter Property="Padding" Value="0,-6,0,0" />
+                <Setter Property="Padding" Value="0,-3,0,0" />
                 <Setter Property="Margin" Value="5,0" />
                 <!--<Setter Property="VerticalAlignment" Value="Center" />-->
                 <Setter Property="FontSize" Value="16" />
             </Style>
             <Style TargetType="ToggleButton" BasedOn="{StaticResource MaterialDesignSwitchToggleButton}">
                 <Setter Property="Foreground" Value="Wheat" />
-                <Setter Property="Height" Value="35" /> 
-                <Setter Property="Width" Value="55" /> 
+                <Setter Property="Height" Value="35" />
+                <Setter Property="Width" Value="55" />
             </Style>
             <Style TargetType="mdui:PackIcon">
                 <Setter Property="Height" Value="20"/>
@@ -138,17 +138,25 @@
     </Window.Resources>
     <Grid>
         <DockPanel>
-            <Grid DockPanel.Dock="Bottom" Margin="5">
-                <DockPanel>
-                    <Button Content="输入完成"  />
-                </DockPanel>
+            <Grid DockPanel.Dock="Bottom" Margin="5,0,5,5">
+                <StackPanel>
+                    <Separator Margin="0,0,0,5"/>
+                    <TextBlock x:Name="errTip" Text="提示" Margin="0,0,0,5" Foreground="OrangeRed" Visibility="Collapsed"/>
+                    <Button Content="输入完成" Click="CompleteButton_Click" />
+                </StackPanel>
             </Grid>
             <Grid Margin="5">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Style="{DynamicResource ScrollViewerStyle1}">
                     <StackPanel>
-                        <GroupBox Header="Main"  >
+                        <GroupBox   >
+                            <GroupBox.Header>
+                                <DockPanel>
+                                <TextBlock Text="Main" Foreground="Black"/>
+                                    <TextBox x:Name="MainPreview" Style="{StaticResource MaterialDesignTextBoxBase}" Text="地址预览" HorizontalAlignment="Right" VerticalAlignment="Center" IsReadOnly="True"/>
+                                </DockPanel>
+                            </GroupBox.Header>
                             <StackPanel>
-                                <TextBox>
+                                <TextBox x:Name="MainPort" Text="29132" TextChanged="WsInfo_TextChanged">
                                     <mdui:HintAssist.Hint>
                                         <StackPanel Orientation="Horizontal">
                                             <mdui:PackIcon Kind="TransitConnectionVariant"/>
@@ -156,7 +164,7 @@
                                         </StackPanel>
                                     </mdui:HintAssist.Hint>
                                 </TextBox>
-                                <TextBox>
+                                <TextBox x:Name="MainEndPoint" Text="mcws" TextChanged="WsInfo_TextChanged">
                                     <mdui:HintAssist.Hint>
                                         <StackPanel Orientation="Horizontal">
                                             <mdui:PackIcon Kind="Web"/>
@@ -164,7 +172,7 @@
                                         </StackPanel>
                                     </mdui:HintAssist.Hint>
                                 </TextBox>
-                                <TextBox>
+                                <TextBox x:Name="MainPassword" Text="commandpassword">
                                     <mdui:HintAssist.Hint>
                                         <StackPanel Orientation="Horizontal">
                                             <mdui:PackIcon Kind="Lock"/>
@@ -174,32 +182,39 @@
                                 </TextBox>
                             </StackPanel>
                         </GroupBox>
-                        <GroupBox Header="Advanced">
+                        <GroupBox>
+                            <GroupBox.Header>
+                                <TextBlock Text="Advanced Options" Foreground="Black"/>
+                            </GroupBox.Header>
                             <StackPanel>
-                                <TextBox mdui:HintAssist.Hint="CMDTimeout："/>
-                                <TextBox mdui:HintAssist.Hint="CMDInterval："/>
-                            <StackPanel Margin="10,0,0,0">
-                                <DockPanel >
-                                    <ToggleButton DockPanel.Dock="Right" IsChecked="True"/>
-                                    <TextBlock Text="PlayerLeftCallback"/>
-                                </DockPanel>
-                                <DockPanel >
-                                    <ToggleButton DockPanel.Dock="Right"/>
-                                    <TextBlock Text="PlayerJoinCallback"/>
-                                </DockPanel>
-                                <DockPanel >
-                                    <ToggleButton DockPanel.Dock="Right"/>
-                                    <TextBlock Text="PlayerMessageCallback"/>
-                                </DockPanel>
-                                <DockPanel >
-                                    <ToggleButton DockPanel.Dock="Right"/>
-                                    <TextBlock Text="EnableDebugOutput"/>
-                                </DockPanel>
-                                <DockPanel >
-                                    <ToggleButton DockPanel.Dock="Right"/>
-                                    <TextBlock Text="QuietConsole"/>
-                                </DockPanel>
-                            </StackPanel>
+                                <TextBox Text="3000" mdui:HintAssist.Hint="Command Feedback Timeout (ms)：" x:Name="AdvancedCmdTimeout" TextChanged="TextNumberCheck_TextChanged"/>
+                                <TextBox Text="50" mdui:HintAssist.Hint="Command Queue Interval (ms)：" x:Name="AdvancedCmdInterval" TextChanged="TextNumberCheck_TextChanged"/>
+                                <StackPanel Margin="10,0,0,0">
+                                    <DockPanel >
+                                        <ToggleButton DockPanel.Dock="Right" IsChecked="True" x:Name="AdvancedPlayerLeftCallback"/>
+                                        <TextBlock Text="PlayerLeftCallback"/>
+                                    </DockPanel>
+                                    <DockPanel >
+                                        <ToggleButton DockPanel.Dock="Right" x:Name="AdvancedPlayerJoinCallback"/>
+                                        <TextBlock Text="PlayerJoinCallback"/>
+                                    </DockPanel>
+                                    <DockPanel >
+                                        <ToggleButton DockPanel.Dock="Right" x:Name="AdvancedPlayerMessageCallback"/>
+                                        <TextBlock Text="PlayerMessageCallback"/>
+                                    </DockPanel>
+                                    <DockPanel >
+                                        <ToggleButton DockPanel.Dock="Right" x:Name="AdvancedPlayerCmdCallbackCallback"/>
+                                        <TextBlock Text="PlayerCmdCallback"/>
+                                    </DockPanel>
+                                    <DockPanel >
+                                        <ToggleButton DockPanel.Dock="Right" x:Name="AdvancedEnableDebugOutput"/>
+                                        <TextBlock Text="EnableDebugOutput"/>
+                                    </DockPanel>
+                                    <DockPanel >
+                                        <ToggleButton DockPanel.Dock="Right" x:Name="AdvancedQuietConsole"/>
+                                        <TextBlock Text="QuietConsole"/>
+                                    </DockPanel>
+                                </StackPanel>
                             </StackPanel>
                         </GroupBox>
                     </StackPanel>

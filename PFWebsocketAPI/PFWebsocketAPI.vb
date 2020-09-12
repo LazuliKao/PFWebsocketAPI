@@ -12,6 +12,7 @@ Imports System.Text
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports System.Timers
+Imports System.Windows.Threading
 Imports Timer = System.Timers.Timer
 
 Namespace PFWebsocketAPI
@@ -131,7 +132,6 @@ Namespace PFWebsocketAPI
         }
         Private Shared CmdCallBack As MCCSAPI.EventCab = Function(e)
                                                              Try
-
                                                                  If CmdOutput IsNot Nothing Then
                                                                      If Equals(CmdOutput.Result, Nothing) Then
                                                                          CmdOutput.Result = TryCast(BaseEvent.getFrom(e), ServerCmdOutputEvent).output
@@ -149,23 +149,18 @@ Namespace PFWebsocketAPI
                                                                      Return False
 #End If
                                                                  End If
-
                                                              Catch err As Exception
                                                                  WriteLineERR("读取命令输出出错", err)
                                                              End Try
-
                                                              Return True
                                                          End Function
-
         Private Shared CmdOutput As WSAPImodel.ExecuteCmdModel = Nothing
         Private Shared _listeningOutPut As Boolean = False
-
         Public Shared Property ListeningOutPut As Boolean
             Get
                 Return _listeningOutPut
             End Get
             Set(ByVal value As Boolean)
-
                 If _listeningOutPut <> value Then
                     If value Then
                         api.addBeforeActListener(EventKey.onServerCmdOutput, CmdCallBack)
@@ -174,42 +169,33 @@ Namespace PFWebsocketAPI
                         If cmdTimer.Enabled Then cmdTimer.Stop()
                     End If
                 End If
-
                 _listeningOutPut = value
             End Set
         End Property
-
         Private Shared Sub CmdTimer_Elapsed(ByVal sender As Object, ByVal ev As ElapsedEventArgs)
             Try
-
                 If CmdOutput Is Nothing Then
                     CmdOutput = cmdQueue.Dequeue()
                     ListeningOutPut = True
                     api.runcmd(CmdOutput.cmd)
                 Else
                     If Not ListeningOutPut Then Return
-
                     If Equals(CmdOutput.Result, Nothing) Then     '指令超时检测
                         CmdOutput.waitTimes += 1
-
                         If CmdOutput.waitTimes * WSBASE.Config.CMDInterval > WSBASE.Config.CMDTimeout Then
                             CmdOutput.Result = "null"
                             CmdOutput = Nothing
-
                             If cmdQueue.Count = 0 Then
                                 ListeningOutPut = False
                             End If
                         End If
                     End If
                 End If
-
             Catch err As Exception
                 WriteLineERR("命令序列操作异常", err)
             End Try
         End Sub
-
         Private Shared api As MCCSAPI = Nothing
-
         Public Shared Sub Init(ByVal mcapi As MCCSAPI)
             api = mcapi
             Console.OutputEncoding = Encoding.UTF8
@@ -222,89 +208,90 @@ Namespace PFWebsocketAPI
 #Region "INFO"
                 Console.ForegroundColor = ConsoleColor.Cyan
                 Console.BackgroundColor = ConsoleColor.DarkBlue
-
                 Try
-                    Dim authorsInfo As String() = New String() {"████████████████████████████", "正在裝載PFWebsocketAPI", "作者        gxh2004", "版本信息    v" & Assembly.GetExecutingAssembly().GetName().Version.ToString(), "适用于bds1.16(CSRV0.1.16.20.3v4编译)", "如版本不同可能存在问题", "当前CSRunnerAPI版本:" & api.VERSION, "配置文件位于""[BDS目录]\plugins\PFWebsocket\config.json""", "请修改配置文件后使用，尤其是Password和endpoint", "以免被他人入侵", "████████████████████████████"}
+                    Dim authorsInfo As String() = New String() {
+                        "████████████████████████████",
+                        "正在裝載PFWebsocketAPI", "作者        gxh2004",
+                        "版本信息    v" & Assembly.GetExecutingAssembly().GetName().Version.ToString(),
+                        "适用于bds1.16(CSRV0.1.16.40.2编译)", "如版本不同可能存在问题", "当前CSRunnerAPI版本:" & api.VERSION,
+                        "配置文件位于""[BDS目录]\plugins\PFWebsocket\config.json""",
+                        "请修改配置文件后使用，尤其是Password和endpoint",
+                        "以免被他人入侵",
+                        "████████████████████████████"}
                     Dim GetLength As Func(Of String, Integer) = Function(input) Encoding.GetEncoding("GBK").GetByteCount(input)
                     Dim infoLength = 0
 
                     For Each line In authorsInfo
                         infoLength = Math.Max(infoLength, GetLength(line))
                     Next
-
                     For i = 0 To authorsInfo.Length - 1
-
                         While GetLength(authorsInfo(i)) < infoLength
                             authorsInfo(i) += " "
                         End While
-
                         Console.WriteLine("█" & authorsInfo(i) & "█")
                     Next
-
                 Catch __unusedException1__ As Exception
                 End Try
-
                 ResetConsoleColor()
 #End Region
                 cmdTimer.Interval = WSBASE.Config.CMDInterval
                 AddHandler cmdTimer.Elapsed, AddressOf CmdTimer_Elapsed
 #If Not DEBUG Then
-#Region "EULA "
-                Dim eulaPath = Path.GetDirectoryName(WSBASE.ConfigPath) & "\EULA"
-                Dim version As String = Assembly.GetExecutingAssembly().GetName().Version.ToString()
-                Dim eulaINFO As JObject = New JObject From {
-                    New JProperty("author", "gxh"),
-                    New JProperty("version", version),
-                    New JProperty("device", WSTools.SFingerPrint())
-                }
-
-                Try
-
-                    If File.Exists(eulaPath) Then
-                        If Encoding.UTF32.GetString(File.ReadAllBytes(eulaPath)) IsNot WSTools.GetMD5(WSTools.StringToUnicode(eulaINFO.ToString())) Then
-                            WriteLineERR("EULA", "使用条款需要更新!")
-                            File.Delete(eulaPath)
-                            Throw New Exception()
-                        End If
-                    Else
-                        Throw New Exception()
-                    End If
-
-                Catch __unusedException1__ As Exception
-
-                    Using dialog As TaskDialog = New TaskDialog()
-                        dialog.WindowTitle = "接受食用条款"
-                        dialog.MainInstruction = "假装下面是本插件的食用条款"
-                        dialog.Content = "1.请在遵守CSRunner前置使用协议的前提下使用本插件" & Microsoft.VisualBasic.Constants.vbLf & "2.不保证本插件不会影响服务器正常运行，如使用本插件造成服务端奔溃等问题，均与作者无瓜" & Microsoft.VisualBasic.Constants.vbLf & "3.严厉打击插件倒卖等行为，共同维护良好的开源环境"
-                        dialog.ExpandedInformation = "点开淦嘛,没东西[doge]"
-                        dialog.Footer = "本插件 <a href=""https://github.com/littlegao233/PFWebsocketAPI"">GitHub开源地址</a>."
-                        AddHandler dialog.HyperlinkClicked, New EventHandler(Of HyperlinkClickedEventArgs)(Sub(sender, e) Process.Start("https://github.com/littlegao233/PFWebsocketAPI"))
-                        dialog.FooterIcon = TaskDialogIcon.Information
-                        dialog.EnableHyperlinks = True
-                        Dim acceptButton As TaskDialogButton = New TaskDialogButton("Accept")
-                        dialog.Buttons.Add(acceptButton)
-                        Dim refuseButton As TaskDialogButton = New TaskDialogButton("拒绝并关闭本插件")
-                        dialog.Buttons.Add(refuseButton)
-                        If dialog.ShowDialog() Is refuseButton Then Throw New Exception("---尚未接受食用条款，本插件加载失败---")
-                    End Using
-
-                    File.WriteAllBytes(eulaPath, Encoding.UTF32.GetBytes(WSTools.GetMD5(WSTools.StringToUnicode(eulaINFO.ToString()))))
-                End Try
+#Region "EULA"
+                Dim height As Integer = Console.WindowHeight : Dim width As Integer = Console.WindowWidth : Dim title As String = Console.Title   'set
+                Dispatcher.CurrentDispatcher.Invoke(Sub()
+                                                        Try
+                                                            Dim eulaPath = Path.GetDirectoryName(WSBASE.ConfigPath) & "\EULA"
+                                                            Dim version As String = Assembly.GetExecutingAssembly().GetName().Version.ToString()
+                                                            Dim eulaINFO As JObject = New JObject From {New JProperty("author", "gxh"), New JProperty("version", version), New JProperty("device", WSTools.SFingerPrint())}
+                                                            Try
+                                                                If File.Exists(eulaPath) Then
+                                                                    If Encoding.UTF32.GetString(File.ReadAllBytes(eulaPath)) <> WSTools.GetMD5(WSTools.StringToUnicode(eulaINFO.ToString())) Then
+                                                                        WriteLineERR("EULA", "使用条款需要更新!")
+                                                                        File.Delete(eulaPath)
+                                                                        Throw New Exception()
+                                                                    End If
+                                                                Else
+                                                                    Throw New Exception()
+                                                                End If
+                                                            Catch __unusedException1__ As Exception
+                                                                Console.Beep()
+                                                                Console.SetWindowSize(Console.WindowWidth, 3) : Console.Title = "当前控制台会无法操作，请同意使用条款即可恢复"
+                                                                WriteLine("请同意使用条款")
+                                                                Using dialog As TaskDialog = New TaskDialog()
+                                                                    dialog.WindowTitle = "接受食用条款"
+                                                                    dialog.MainInstruction = "假装下面是本插件的食用条款"
+                                                                    dialog.Content = "1.请在遵守CSRunner前置使用协议的前提下使用本插件" & Microsoft.VisualBasic.Constants.vbLf & "2.不保证本插件不会影响服务器正常运行，如使用本插件造成服务端奔溃等问题，均与作者无瓜" & Microsoft.VisualBasic.Constants.vbLf & "3.严厉打击插件倒卖等行为，共同维护良好的开源环境"
+                                                                    dialog.ExpandedInformation = "点开淦嘛,没东西[doge]"
+                                                                    dialog.Footer = "本插件 <a href=""https://github.com/littlegao233/PFWebsocketAPI"">GitHub开源地址</a>."
+                                                                    AddHandler dialog.HyperlinkClicked, New EventHandler(Of HyperlinkClickedEventArgs)(Sub(sender, e) Process.Start("https://github.com/littlegao233/PFWebsocketAPI"))
+                                                                    dialog.FooterIcon = TaskDialogIcon.Information
+                                                                    dialog.EnableHyperlinks = True
+                                                                    Dim acceptButton As TaskDialogButton = New TaskDialogButton("Accept")
+                                                                    dialog.Buttons.Add(acceptButton)
+                                                                    Dim refuseButton As TaskDialogButton = New TaskDialogButton("拒绝并关闭本插件")
+                                                                    dialog.Buttons.Add(refuseButton)
+                                                                    If dialog.ShowDialog() Is refuseButton Then Throw New Exception("---尚未接受食用条款，本插件加载失败---")
+                                                                End Using
+                                                                File.WriteAllBytes(eulaPath, Encoding.UTF32.GetBytes(WSTools.GetMD5(WSTools.StringToUnicode(eulaINFO.ToString()))))
+                                                            End Try
+                                                        Catch err As Exception
+                                                            WriteLineERR("条款获取出错", err)
+                                                        End Try
+                                                    End Sub)
+                Console.Title = title : Console.SetWindowSize(width, height)  'recover
 #End Region
 #End If
 #End Region
                 WSACT.Start(Sub(message)
                                 Dim receiveData As WSAPImodel.ExecuteCmdModel
-
                                 Try
                                     receiveData = New WSAPImodel.ExecuteCmdModel(JObject.Parse(message))
                                 Catch err As Exception
                                     WriteLineERR("收信文本转换失败", err.Message)
                                     Return
                                 End Try
-
                                 Try
-
                                     If receiveData.cmd.StartsWith("op ") OrElse receiveData.cmd.StartsWith("execute") AndAlso receiveData.cmd.IndexOf("op ") <> -1 Then
                                         WriteLine("出于安全考虑，禁止远程执行op命令")
                                         WSACT.SendToAll(receiveData.GetFeedback("出于安全考虑，禁止远程执行op命令"))
@@ -316,7 +303,6 @@ Namespace PFWebsocketAPI
                                         WriteLine("命令未执行")
                                         WSACT.SendToAll(receiveData.GetFeedback())
                                     End If
-
                                 Catch __unusedException1__ As Exception
                                 End Try
                             End Sub)
@@ -339,7 +325,6 @@ Namespace PFWebsocketAPI
                                                                   End Function)
                     WriteLine("已开启PlayerJoinCallback监听")
                 End If
-
                 If WSBASE.Config.PlayerLeftCallback Then
                     api.addBeforeActListener(EventKey.onPlayerLeft, Function(eventraw)
                                                                         Try
@@ -358,7 +343,6 @@ Namespace PFWebsocketAPI
                                                                     End Function)
                     WriteLine("已开启PlayerLeftCallback监听")
                 End If
-
                 If WSBASE.Config.PlayerCmdCallback Then
                     api.addBeforeActListener(EventKey.onInputCommand, Function(eventraw)
                                                                           Try
@@ -377,7 +361,6 @@ Namespace PFWebsocketAPI
                                                                       End Function)
                     WriteLine("已开启PlayerCmdCallback监听")
                 End If
-
                 If WSBASE.Config.PlayerMessageCallback Then
                     api.addBeforeActListener(EventKey.onInputText, Function(eventraw)
                                                                        Try
@@ -439,8 +422,8 @@ Namespace PFWebsocketAPI
                 msgid = receive.Value(Of String)("msgid")
                 Dim token = receive.Value(Of String)("passwd")
                 receive("passwd") = ""
-                Auth = token Is WSTools.GetMD5(WSBASE.Config.Password & Date.Now.ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None))
-                If Not Auth Then Auth = token Is WSTools.GetMD5(WSBASE.Config.Password & (Date.Now - (New TimeSpan(0, 0, 1, 0))).ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None))
+                Auth = token = WSTools.GetMD5(WSBASE.Config.Password & Date.Now.ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None))
+                If Not Auth Then Auth = token = WSTools.GetMD5(WSBASE.Config.Password & (Date.Now - (New TimeSpan(0, 0, 1, 0))).ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None))
                 If Not Auth Then WSACT.WriteLineERR("密匙不匹配:", "收到密匙:" & token & Microsoft.VisualBasic.Constants.vbTab & "本地密匙:" & WSTools.GetMD5(WSBASE.Config.Password & Date.Now.ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None)))
             End Sub
 
