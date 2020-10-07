@@ -1,5 +1,4 @@
-﻿Imports System
-Imports CSR
+﻿
 REM 注意工程根命名空间为CSR，保证接口可被调用
 Namespace Global.CSR
     Public Class Plugin

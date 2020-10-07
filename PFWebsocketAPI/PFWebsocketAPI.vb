@@ -422,9 +422,9 @@ Namespace PFWebsocketAPI
                 msgid = receive.Value(Of String)("msgid")
                 Dim token = receive.Value(Of String)("passwd")
                 receive("passwd") = ""
-                Auth = token = WSTools.GetMD5(WSBASE.Config.Password & Date.Now.ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None))
-                If Not Auth Then Auth = token = WSTools.GetMD5(WSBASE.Config.Password & (Date.Now - (New TimeSpan(0, 0, 1, 0))).ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None))
-                If Not Auth Then WSACT.WriteLineERR("密匙不匹配:", "收到密匙:" & token & Microsoft.VisualBasic.Constants.vbTab & "本地密匙:" & WSTools.GetMD5(WSBASE.Config.Password & Date.Now.ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None)))
+                Auth = token = GetMD5(Config.Password & Date.Now.ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None))
+                If Not Auth Then Auth = token = GetMD5(Config.Password & (Date.Now - (New TimeSpan(0, 0, 1, 0))).ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None))
+                If Not Auth Then WriteLineERR("密匙不匹配:", "收到密匙:" & token & vbTab & "本地密匙:" & GetMD5(Config.Password & Date.Now.ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None)))
             End Sub
 
             Public Auth As Boolean = False

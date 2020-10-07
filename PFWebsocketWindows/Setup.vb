@@ -102,7 +102,7 @@ End Class
 
 
 Public Class ConfigModel
-    Public Port As String = "29132", EndPoint As String = "mcws", Password As String = "pwd"
+    Public Port As String = "29132", EndPoint As String = "mcws", Password As String = "commandpassword"
     Public CMDTimeout As Double = 1800
     Public CMDInterval As Double = 200
 #If DEBUG Then
