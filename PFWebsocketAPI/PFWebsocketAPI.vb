@@ -238,7 +238,12 @@ Namespace PFWebsocketAPI
                 AddHandler cmdTimer.Elapsed, AddressOf CmdTimer_Elapsed
 #If Not DEBUG Then
 #Region "EULA"
-                Dim height As Integer = Console.WindowHeight : Dim width As Integer = Console.WindowWidth : Dim title As String = Console.Title   'set
+                Dim height As Integer = Nothing
+                Dim width As Integer = Nothing
+                Dim title As String = Nothing
+                Try
+                    height = System.Console.WindowHeight : width = System.Console.WindowWidth : title = System.Console.Title   'set
+                Catch : End Try
                 Dispatcher.CurrentDispatcher.Invoke(Sub()
                                                         Try
                                                             Dim eulaPath = Path.GetDirectoryName(WSBASE.ConfigPath) & "\EULA"
@@ -255,8 +260,10 @@ Namespace PFWebsocketAPI
                                                                     Throw New Exception()
                                                                 End If
                                                             Catch __unusedException1__ As Exception
-                                                                Console.Beep()
-                                                                Console.SetWindowSize(Console.WindowWidth, 3) : Console.Title = "当前控制台会无法操作，请同意使用条款即可恢复"
+                                                                Try
+                                                                    System.Console.Beep()
+                                                                    System.Console.SetWindowSize(System.Console.WindowWidth, 3) : System.Console.Title = "当前控制台会无法操作，请同意使用条款即可恢复"
+                                                                Catch : End Try
                                                                 WriteLine("请同意使用条款")
                                                                 Using dialog As TaskDialog = New TaskDialog()
                                                                     dialog.WindowTitle = "接受食用条款"
@@ -279,7 +286,11 @@ Namespace PFWebsocketAPI
                                                             WriteLineERR("条款获取出错", err)
                                                         End Try
                                                     End Sub)
-                Console.Title = title : Console.SetWindowSize(width, height)  'recover
+                Try
+                    If title IsNot Nothing Then
+                        System.Console.Title = title : System.Console.SetWindowSize(width, height)  'recover
+                    End If
+                Catch : End Try
 #End Region
 #End If
 #End Region

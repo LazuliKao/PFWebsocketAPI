@@ -51,7 +51,7 @@ Partial Public Class Setup
     End Sub
     Public ReadOnly Property GetWsPreview As String
         Get
-            Return "ws://0.0.0.0:" & MainPort.Text + If(String.IsNullOrWhiteSpace(MainEndPoint.Text), Nothing, "/" & MainEndPoint.Text)
+            Return "ws://127.0.0.1:" & MainPort.Text + If(String.IsNullOrWhiteSpace(MainEndPoint.Text), Nothing, "/" & MainEndPoint.Text)
         End Get
     End Property
     Public Shared configData As ConfigModel
