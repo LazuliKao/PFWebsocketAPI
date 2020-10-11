@@ -319,75 +319,75 @@ Namespace PFWebsocketAPI
                             End Sub)
 #Region "注册各类监听"
                 If WSBASE.Config.PlayerJoinCallback Then
-                    api.addBeforeActListener(EventKey.onLoadName, Function(eventraw)
-                                                                      Try
-                                                                          Return True
-                                                                      Finally
-                                                                          Dim e = TryCast(BaseEvent.getFrom(eventraw), LoadNameEvent)
-                                                                          Task.Run(Sub()
-                                                                                       Try
-                                                                                           Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.onjoin, e.playername, e.xuid)
-                                                                                           WSACT.SendToAll(sendData.ToString())
-                                                                                       Catch err As Exception
-                                                                                           WriteLineERR("PlayerJoinCallback", err)
-                                                                                       End Try
-                                                                                   End Sub)
-                                                                      End Try
-                                                                  End Function)
+                    api.addAfterActListener(EventKey.onLoadName, Function(eventraw)
+                                                                     Try
+                                                                         Return True
+                                                                     Finally
+                                                                         Dim e = TryCast(BaseEvent.getFrom(eventraw), LoadNameEvent)
+                                                                         Task.Run(Sub()
+                                                                                      Try
+                                                                                          Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.onjoin, e.playername, e.xuid)
+                                                                                          WSACT.SendToAll(sendData.ToString())
+                                                                                      Catch err As Exception
+                                                                                          WriteLineERR("PlayerJoinCallback", err)
+                                                                                      End Try
+                                                                                  End Sub)
+                                                                     End Try
+                                                                 End Function)
                     WriteLine("已开启PlayerJoinCallback监听")
                 End If
                 If WSBASE.Config.PlayerLeftCallback Then
-                    api.addBeforeActListener(EventKey.onPlayerLeft, Function(eventraw)
-                                                                        Try
-                                                                            Return True
-                                                                        Finally
-                                                                            Dim e = TryCast(BaseEvent.getFrom(eventraw), PlayerLeftEvent)
-                                                                            Task.Run(Sub()
-                                                                                         Try
-                                                                                             Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.onleft, e.playername, e.xuid)
-                                                                                             WSACT.SendToAll(sendData.ToString())
-                                                                                         Catch err As Exception
-                                                                                             WriteLineERR("PlayerLeftCallback", err)
-                                                                                         End Try
-                                                                                     End Sub)
-                                                                        End Try
-                                                                    End Function)
-                    WriteLine("已开启PlayerLeftCallback监听")
-                End If
-                If WSBASE.Config.PlayerCmdCallback Then
-                    api.addBeforeActListener(EventKey.onInputCommand, Function(eventraw)
-                                                                          Try
-                                                                              Return True
-                                                                          Finally
-                                                                              Dim e = TryCast(BaseEvent.getFrom(eventraw), InputCommandEvent)
-                                                                              Task.Run(Sub()
-                                                                                           Try
-                                                                                               Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.oncmd, e.playername, e.cmd.Substring(1))
-                                                                                               WSACT.SendToAll(sendData.ToString())
-                                                                                           Catch err As Exception
-                                                                                               WriteLineERR("PlayerCmdCallback", err)
-                                                                                           End Try
-                                                                                       End Sub)
-                                                                          End Try
-                                                                      End Function)
-                    WriteLine("已开启PlayerCmdCallback监听")
-                End If
-                If WSBASE.Config.PlayerMessageCallback Then
-                    api.addBeforeActListener(EventKey.onInputText, Function(eventraw)
+                    api.addAfterActListener(EventKey.onPlayerLeft, Function(eventraw)
                                                                        Try
                                                                            Return True
                                                                        Finally
-                                                                           Dim e = TryCast(BaseEvent.getFrom(eventraw), InputTextEvent)
+                                                                           Dim e = TryCast(BaseEvent.getFrom(eventraw), PlayerLeftEvent)
                                                                            Task.Run(Sub()
                                                                                         Try
-                                                                                            Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.onmsg, e.playername, e.msg)
+                                                                                            Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.onleft, e.playername, e.xuid)
                                                                                             WSACT.SendToAll(sendData.ToString())
                                                                                         Catch err As Exception
-                                                                                            WriteLineERR("PlayerMessageCallback", err)
+                                                                                            WriteLineERR("PlayerLeftCallback", err)
                                                                                         End Try
                                                                                     End Sub)
                                                                        End Try
                                                                    End Function)
+                    WriteLine("已开启PlayerLeftCallback监听")
+                End If
+                If WSBASE.Config.PlayerCmdCallback Then
+                    api.addAfterActListener(EventKey.onInputCommand, Function(eventraw)
+                                                                         Try
+                                                                             Return True
+                                                                         Finally
+                                                                             Dim e = TryCast(BaseEvent.getFrom(eventraw), InputCommandEvent)
+                                                                             Task.Run(Sub()
+                                                                                          Try
+                                                                                              Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.oncmd, e.playername, e.cmd.Substring(1))
+                                                                                              WSACT.SendToAll(sendData.ToString())
+                                                                                          Catch err As Exception
+                                                                                              WriteLineERR("PlayerCmdCallback", err)
+                                                                                          End Try
+                                                                                      End Sub)
+                                                                         End Try
+                                                                     End Function)
+                    WriteLine("已开启PlayerCmdCallback监听")
+                End If
+                If WSBASE.Config.PlayerMessageCallback Then
+                    api.addAfterActListener(EventKey.onInputText, Function(eventraw)
+                                                                      Try
+                                                                          Return True
+                                                                      Finally
+                                                                          Dim e = TryCast(BaseEvent.getFrom(eventraw), InputTextEvent)
+                                                                          Task.Run(Sub()
+                                                                                       Try
+                                                                                           Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.onmsg, e.playername, e.msg)
+                                                                                           WSACT.SendToAll(sendData.ToString())
+                                                                                       Catch err As Exception
+                                                                                           WriteLineERR("PlayerMessageCallback", err)
+                                                                                       End Try
+                                                                                   End Sub)
+                                                                      End Try
+                                                                  End Function)
                     WriteLine("已开启PlayerMessageCallback监听")
 #End Region
                 End If

@@ -195,15 +195,15 @@
                                         <TextBlock Text="PlayerLeftCallback"/>
                                     </DockPanel>
                                     <DockPanel >
-                                        <ToggleButton DockPanel.Dock="Right" x:Name="AdvancedPlayerJoinCallback"/>
+                                        <ToggleButton DockPanel.Dock="Right" IsChecked="True" x:Name="AdvancedPlayerJoinCallback"/>
                                         <TextBlock Text="PlayerJoinCallback"/>
                                     </DockPanel>
                                     <DockPanel >
-                                        <ToggleButton DockPanel.Dock="Right" x:Name="AdvancedPlayerMessageCallback"/>
+                                        <ToggleButton DockPanel.Dock="Right" IsChecked="True" x:Name="AdvancedPlayerMessageCallback"/>
                                         <TextBlock Text="PlayerMessageCallback"/>
                                     </DockPanel>
                                     <DockPanel >
-                                        <ToggleButton DockPanel.Dock="Right" x:Name="AdvancedPlayerCmdCallbackCallback"/>
+                                        <ToggleButton DockPanel.Dock="Right" IsChecked="True" x:Name="AdvancedPlayerCmdCallbackCallback"/>
                                         <TextBlock Text="PlayerCmdCallback"/>
                                     </DockPanel>
                                     <DockPanel >
