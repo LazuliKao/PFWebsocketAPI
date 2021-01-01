@@ -121,6 +121,10 @@ Namespace PFWebsocketAPI.Model
         Friend Sub New(json As JObject)
             params = GetParams(Of ParamMap)(json)
         End Sub
+        Friend Sub New(mode As EncryptionMode, from As String, password As String)
+            params.mode = mode
+            params.raw = SimpleAES.AES256.Encrypt(params.raw, password)
+        End Sub
         Public Function Decode(password As String) As String '解密params.raw中的内容并返回
             Dim decoded = SimpleAES.AES256.Decrypt(params.raw, password)
             If String.IsNullOrEmpty(decoded) Then Throw New Exception("AES256 Decode failed!")
