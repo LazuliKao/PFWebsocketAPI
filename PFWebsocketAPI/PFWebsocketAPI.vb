@@ -2,6 +2,7 @@
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
 Imports Ookii.Dialogs.Wpf
+Imports PFWebsocketAPI.PFWebsocketAPI.Model
 Imports PFWebsocketBase
 Imports System
 Imports System.Collections.Generic
@@ -14,19 +15,18 @@ Imports System.Threading.Tasks
 Imports System.Timers
 Imports System.Windows.Threading
 Imports Timer = System.Timers.Timer
-
 Namespace PFWebsocketAPI
-    Friend Class Program
+    Friend Module Program
 #Region "Console"
-        Private Shared defaultForegroundColor As ConsoleColor = ConsoleColor.White
-        Private Shared defaultBackgroundColor As ConsoleColor = ConsoleColor.Black
+        Private defaultForegroundColor As ConsoleColor = ConsoleColor.White
+        Private defaultBackgroundColor As ConsoleColor = ConsoleColor.Black
 
-        Private Shared Sub ResetConsoleColor()
+        Private Sub ResetConsoleColor()
             Console.ForegroundColor = defaultForegroundColor
             Console.BackgroundColor = defaultBackgroundColor
         End Sub
 
-        Public Shared Sub WriteLine(ByVal content As Object)
+        Public Sub WriteLine(ByVal content As Object)
             For i = 0 To 250
                 If WSACT.WritingAvaliable Then Exit For
                 Thread.Sleep(4)
@@ -45,7 +45,7 @@ Namespace PFWebsocketAPI
             WSACT.WritingAvaliable = True
         End Sub
 
-        Public Shared Sub WriteLineERR(ByVal type As Object, ByVal content As Object)
+        Public Sub WriteLineERR(ByVal type As Object, ByVal content As Object)
             For i = 0 To 250
                 If WSACT.WritingAvaliable Then Exit For
                 Thread.Sleep(4)
@@ -125,42 +125,51 @@ Namespace PFWebsocketAPI
         '            }
         '        }
 #End Region
-        Public Shared cmdQueue As Queue(Of WSAPImodel.ExecuteCmdModel) = New Queue(Of WSAPImodel.ExecuteCmdModel)()
-        Private Shared cmdTimer As Timer = New Timer() With {
+        Public cmdQueue As New Queue(Of CauseRuncmdFeedback)
+        Friend cmdTimer As Timer = New Timer() With {
             .AutoReset = True,
             .Enabled = False
         }
-        Private Shared CmdCallBack As MCCSAPI.EventCab = Function(e)
-                                                             Try
-                                                                 If CmdOutput IsNot Nothing Then
-                                                                     If Equals(CmdOutput.Result, Nothing) Then
-                                                                         CmdOutput.Result = TryCast(BaseEvent.getFrom(e), ServerCmdOutputEvent).output
-
-                                                                         If cmdQueue.Count = 0 Then
-                                                                             ListeningOutPut = False
-                                                                         End If
-                                                                     End If
-
-                                                                     CmdOutput = Nothing
+        Private CmdCallBack As MCCSAPI.EventCab = Function(e)
+                                                      Try
+                                                          If InvokingCmd IsNot Nothing Then
+                                                              If Equals(InvokingCmd.params.result, Nothing) Then
+                                                                  InvokingCmd.params.result = TryCast(BaseEvent.getFrom(e), ServerCmdOutputEvent).output
+                                                                  If cmdQueue.Count = 0 Then
+                                                                      ListeningOutPut = False
+                                                                  End If
+                                                              End If
+                                                              InvokingCmd = Nothing
 #If False Then
                     WriteLine("ExecuteCmdOutPuted");
                     return true;
 #Else
-                                                                     Return False
+                                                              Return False
 #End If
-                                                                 End If
-                                                             Catch err As Exception
-                                                                 WriteLineERR("读取命令输出出错", err)
-                                                             End Try
-                                                             Return True
-                                                         End Function
-        Private Shared CmdOutput As WSAPImodel.ExecuteCmdModel = Nothing
-        Private Shared _listeningOutPut As Boolean = False
-        Public Shared Property ListeningOutPut As Boolean
+                                                          End If
+                                                      Catch err As Exception
+                                                          WriteLineERR("读取命令输出出错", err)
+                                                      End Try
+                                                      Return True
+                                                  End Function
+        Private _InvokingCmd As CauseRuncmdFeedback = Nothing
+        Private Property InvokingCmd As CauseRuncmdFeedback
+            Get
+                Return _InvokingCmd
+            End Get
+            Set(value As CauseRuncmdFeedback)
+                If _InvokingCmd IsNot Nothing Then
+                    SendToCon(_InvokingCmd.params.con, _InvokingCmd.ToString)
+                End If
+                _InvokingCmd = value
+            End Set
+        End Property
+        Private _listeningOutPut As Boolean = False
+        Public Property ListeningOutPut As Boolean
             Get
                 Return _listeningOutPut
             End Get
-            Set(ByVal value As Boolean)
+            Set(value As Boolean)
                 If _listeningOutPut <> value Then
                     If value Then
                         api.addBeforeActListener(EventKey.onServerCmdOutput, CmdCallBack)
@@ -172,19 +181,19 @@ Namespace PFWebsocketAPI
                 _listeningOutPut = value
             End Set
         End Property
-        Private Shared Sub CmdTimer_Elapsed(ByVal sender As Object, ByVal ev As ElapsedEventArgs)
+        Friend Sub CmdTimer_Elapsed(sender As Object, ev As ElapsedEventArgs)
             Try
-                If CmdOutput Is Nothing Then
-                    CmdOutput = cmdQueue.Dequeue()
+                If InvokingCmd Is Nothing AndAlso cmdQueue.Count > 0 Then
+                    InvokingCmd = cmdQueue.Dequeue()
                     ListeningOutPut = True
-                    api.runcmd(CmdOutput.cmd)
+                    api.runcmd(InvokingCmd.params.cmd)
                 Else
                     If Not ListeningOutPut Then Return
-                    If Equals(CmdOutput.Result, Nothing) Then     '指令超时检测
-                        CmdOutput.waitTimes += 1
-                        If CmdOutput.waitTimes * WSBASE.Config.CMDInterval > WSBASE.Config.CMDTimeout Then
-                            CmdOutput.Result = "null"
-                            CmdOutput = Nothing
+                    If IsNothing(InvokingCmd.params.result) Then     '指令超时检测
+                        InvokingCmd.params.waiting += 1
+                        If InvokingCmd.params.waiting * Config.CMDInterval > Config.CMDTimeout Then
+                            InvokingCmd.params.result = "null"
+                            InvokingCmd = Nothing
                             If cmdQueue.Count = 0 Then
                                 ListeningOutPut = False
                             End If
@@ -195,8 +204,8 @@ Namespace PFWebsocketAPI
                 WriteLineERR("命令序列操作异常", err)
             End Try
         End Sub
-        Private Shared api As MCCSAPI = Nothing
-        Public Shared Sub Init(ByVal mcapi As MCCSAPI)
+        Friend api As MCCSAPI = Nothing
+        Public Sub Init(ByVal mcapi As MCCSAPI)
             api = mcapi
             Console.OutputEncoding = Encoding.UTF8
             defaultForegroundColor = Console.ForegroundColor
@@ -238,85 +247,67 @@ Namespace PFWebsocketAPI
                 AddHandler cmdTimer.Elapsed, AddressOf CmdTimer_Elapsed
 #If Not DEBUG Then
 #Region "EULA"
-                Dim height As Integer = Nothing
-                Dim width As Integer = Nothing
-                Dim title As String = Nothing
                 Try
-                    height = System.Console.WindowHeight : width = System.Console.WindowWidth : title = System.Console.Title   'set
-                Catch : End Try
-                Dispatcher.CurrentDispatcher.Invoke(Sub()
-                                                        Try
-                                                            Dim eulaPath = Path.GetDirectoryName(WSBASE.ConfigPath) & "\EULA"
-                                                            Dim version As String = Assembly.GetExecutingAssembly().GetName().Version.ToString()
-                                                            Dim eulaINFO As JObject = New JObject From {New JProperty("author", "gxh"), New JProperty("version", version), New JProperty("device", WSTools.SFingerPrint())}
+                    Dim height As Integer = Nothing
+                    Dim width As Integer = Nothing
+                    Dim title As String = Nothing
+                    Try
+                        height = System.Console.WindowHeight : width = System.Console.WindowWidth : title = System.Console.Title   'set
+                    Catch : End Try
+                    Dispatcher.CurrentDispatcher.Invoke(Sub()
                                                             Try
-                                                                If File.Exists(eulaPath) Then
-                                                                    If Encoding.UTF32.GetString(File.ReadAllBytes(eulaPath)) <> WSTools.GetMD5(WSTools.StringToUnicode(eulaINFO.ToString())) Then
-                                                                        WriteLineERR("EULA", "使用条款需要更新!")
-                                                                        File.Delete(eulaPath)
+                                                                Dim eulaPath = Path.GetDirectoryName(WSBASE.ConfigPath) & "\EULA"
+                                                                Dim version As String = Assembly.GetExecutingAssembly().GetName().Version.ToString()
+                                                                Dim eulaINFO As JObject = New JObject From {New JProperty("author", "gxh"), New JProperty("version", version), New JProperty("device", WSTools.SFingerPrint())}
+                                                                Try
+                                                                    If File.Exists(eulaPath) Then
+                                                                        If Encoding.UTF32.GetString(File.ReadAllBytes(eulaPath)) <> WSTools.GetMD5(WSTools.StringToUnicode(eulaINFO.ToString())) Then
+                                                                            WriteLineERR("EULA", "使用条款需要更新!")
+                                                                            File.Delete(eulaPath)
+                                                                            Throw New Exception()
+                                                                        End If
+                                                                    Else
                                                                         Throw New Exception()
                                                                     End If
-                                                                Else
-                                                                    Throw New Exception()
-                                                                End If
-                                                            Catch __unusedException1__ As Exception
-                                                                Try
-                                                                    System.Console.Beep()
-                                                                    System.Console.SetWindowSize(System.Console.WindowWidth, 3) : System.Console.Title = "当前控制台会无法操作，请同意使用条款即可恢复"
-                                                                Catch : End Try
-                                                                WriteLine("请同意使用条款")
-                                                                Using dialog As TaskDialog = New TaskDialog()
-                                                                    dialog.WindowTitle = "接受食用条款"
-                                                                    dialog.MainInstruction = "假装下面是本插件的食用条款"
-                                                                    dialog.Content = "1.请在遵守CSRunner前置使用协议的前提下使用本插件" & Microsoft.VisualBasic.Constants.vbLf & "2.不保证本插件不会影响服务器正常运行，如使用本插件造成服务端奔溃等问题，均与作者无瓜" & Microsoft.VisualBasic.Constants.vbLf & "3.严厉打击插件倒卖等行为，共同维护良好的开源环境"
-                                                                    dialog.ExpandedInformation = "点开淦嘛,没东西[doge]"
-                                                                    dialog.Footer = "本插件 <a href=""https://github.com/littlegao233/PFWebsocketAPI"">GitHub开源地址</a>."
-                                                                    AddHandler dialog.HyperlinkClicked, New EventHandler(Of HyperlinkClickedEventArgs)(Sub(sender, e) Process.Start("https://github.com/littlegao233/PFWebsocketAPI"))
-                                                                    dialog.FooterIcon = TaskDialogIcon.Information
-                                                                    dialog.EnableHyperlinks = True
-                                                                    Dim acceptButton As TaskDialogButton = New TaskDialogButton("Accept")
-                                                                    dialog.Buttons.Add(acceptButton)
-                                                                    Dim refuseButton As TaskDialogButton = New TaskDialogButton("拒绝并关闭本插件")
-                                                                    dialog.Buttons.Add(refuseButton)
-                                                                    If dialog.ShowDialog() Is refuseButton Then Throw New Exception("---尚未接受食用条款，本插件加载失败---")
-                                                                End Using
-                                                                File.WriteAllBytes(eulaPath, Encoding.UTF32.GetBytes(WSTools.GetMD5(WSTools.StringToUnicode(eulaINFO.ToString()))))
+                                                                Catch __unusedException1__ As Exception
+                                                                    Try
+                                                                        System.Console.Beep()
+                                                                        System.Console.SetWindowSize(System.Console.WindowWidth, 3) : System.Console.Title = "当前控制台会无法操作，请同意使用条款即可恢复"
+                                                                    Catch : End Try
+                                                                    WriteLine("请同意使用条款")
+                                                                    Using dialog As TaskDialog = New TaskDialog()
+                                                                        dialog.WindowTitle = "接受食用条款"
+                                                                        dialog.MainInstruction = "假装下面是本插件的食用条款"
+                                                                        dialog.Content = "1.请在遵守CSRunner前置使用协议的前提下使用本插件" & Microsoft.VisualBasic.Constants.vbLf & "2.不保证本插件不会影响服务器正常运行，如使用本插件造成服务端奔溃等问题，均与作者无瓜" & Microsoft.VisualBasic.Constants.vbLf & "3.严厉打击插件倒卖等行为，共同维护良好的开源环境"
+                                                                        dialog.ExpandedInformation = "点开淦嘛,没东西[doge]"
+                                                                        dialog.Footer = "本插件 <a href=""https://github.com/littlegao233/PFWebsocketAPI"">GitHub开源地址</a>."
+                                                                        AddHandler dialog.HyperlinkClicked, New EventHandler(Of HyperlinkClickedEventArgs)(Sub(sender, e) Process.Start("https://github.com/littlegao233/PFWebsocketAPI"))
+                                                                        dialog.FooterIcon = TaskDialogIcon.Information
+                                                                        dialog.EnableHyperlinks = True
+                                                                        Dim acceptButton As TaskDialogButton = New TaskDialogButton("Accept")
+                                                                        dialog.Buttons.Add(acceptButton)
+                                                                        Dim refuseButton As TaskDialogButton = New TaskDialogButton("拒绝并关闭本插件")
+                                                                        dialog.Buttons.Add(refuseButton)
+                                                                        If dialog.ShowDialog() Is refuseButton Then Throw New Exception("---尚未接受食用条款，本插件加载失败---")
+                                                                    End Using
+                                                                    File.WriteAllBytes(eulaPath, Encoding.UTF32.GetBytes(WSTools.GetMD5(WSTools.StringToUnicode(eulaINFO.ToString()))))
+                                                                End Try
+                                                            Catch err As Exception
+                                                                WriteLineERR("条款获取出错", err)
                                                             End Try
-                                                        Catch err As Exception
-                                                            WriteLineERR("条款获取出错", err)
-                                                        End Try
-                                                    End Sub)
-                Try
-                    If title IsNot Nothing Then
-                        System.Console.Title = title : System.Console.SetWindowSize(width, height)  'recover
-                    End If
-                Catch : End Try
+                                                        End Sub)
+                    Try
+                        If title IsNot Nothing Then
+                            System.Console.Title = title : System.Console.SetWindowSize(width, height)  'recover
+                        End If
+                    Catch : End Try
+                Catch ex As Exception
+                    Throw
+                End Try
 #End Region
 #End If
 #End Region
-                WSACT.Start(Sub(message)
-                                Dim receiveData As WSAPImodel.ExecuteCmdModel
-                                Try
-                                    receiveData = New WSAPImodel.ExecuteCmdModel(JObject.Parse(message))
-                                Catch err As Exception
-                                    WriteLineERR("收信文本转换失败", err.Message)
-                                    Return
-                                End Try
-                                Try
-                                    If receiveData.cmd.StartsWith("op ") OrElse receiveData.cmd.StartsWith("execute") AndAlso receiveData.cmd.IndexOf("op ") <> -1 Then
-                                        WriteLine("出于安全考虑，禁止远程执行op命令")
-                                        WSACT.SendToAll(receiveData.GetFeedback("出于安全考虑，禁止远程执行op命令"))
-                                    ElseIf receiveData.Auth Then '添加到序列
-                                        cmdQueue.Enqueue(receiveData)
-                                        CmdTimer_Elapsed(cmdTimer, Nothing)
-                                        If Not cmdTimer.Enabled Then cmdTimer.Start() '直接返回错误
-                                    Else
-                                        WriteLine("命令未执行")
-                                        WSACT.SendToAll(receiveData.GetFeedback())
-                                    End If
-                                Catch __unusedException1__ As Exception
-                                End Try
-                            End Sub)
+                WSACT.Start(AddressOf PackOperation.ReadPackInitial)
 #Region "注册各类监听"
                 If WSBASE.Config.PlayerJoinCallback Then
                     api.addAfterActListener(EventKey.onLoadName, Function(eventraw)
@@ -326,7 +317,7 @@ Namespace PFWebsocketAPI
                                                                          Dim e = TryCast(BaseEvent.getFrom(eventraw), LoadNameEvent)
                                                                          Task.Run(Sub()
                                                                                       Try
-                                                                                          Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.onjoin, e.playername, e.xuid)
+                                                                                          Dim sendData = New Model.CauseJoin(e.playername, e.xuid, e.uuid, GetPlayerIP(e.playerPtr, True))
                                                                                           WSACT.SendToAll(sendData.ToString())
                                                                                       Catch err As Exception
                                                                                           WriteLineERR("PlayerJoinCallback", err)
@@ -344,7 +335,7 @@ Namespace PFWebsocketAPI
                                                                            Dim e = TryCast(BaseEvent.getFrom(eventraw), PlayerLeftEvent)
                                                                            Task.Run(Sub()
                                                                                         Try
-                                                                                            Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.onleft, e.playername, e.xuid)
+                                                                                            Dim sendData = New Model.CauseLeft(e.playername, e.xuid, e.uuid, GetPlayerIP(e.playerPtr))
                                                                                             WSACT.SendToAll(sendData.ToString())
                                                                                         Catch err As Exception
                                                                                             WriteLineERR("PlayerLeftCallback", err)
@@ -362,7 +353,7 @@ Namespace PFWebsocketAPI
                                                                              Dim e = TryCast(BaseEvent.getFrom(eventraw), InputCommandEvent)
                                                                              Task.Run(Sub()
                                                                                           Try
-                                                                                              Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.oncmd, e.playername, e.cmd.Substring(1))
+                                                                                              Dim sendData = New Model.CauseCmd(e.playername, e.cmd)
                                                                                               WSACT.SendToAll(sendData.ToString())
                                                                                           Catch err As Exception
                                                                                               WriteLineERR("PlayerCmdCallback", err)
@@ -380,7 +371,7 @@ Namespace PFWebsocketAPI
                                                                           Dim e = TryCast(BaseEvent.getFrom(eventraw), InputTextEvent)
                                                                           Task.Run(Sub()
                                                                                        Try
-                                                                                           Dim sendData = New WSAPImodel.SendModel(WSAPImodel.SendType.onmsg, e.playername, e.msg)
+                                                                                           Dim sendData = New Model.CauseChat(e.playername, e.msg)
                                                                                            WSACT.SendToAll(sendData.ToString())
                                                                                        Catch err As Exception
                                                                                            WriteLineERR("PlayerMessageCallback", err)
@@ -395,80 +386,6 @@ Namespace PFWebsocketAPI
                 WriteLineERR("插件遇到严重错误，无法继续运行", err.Message)
             End Try
         End Sub
-    End Class
+    End Module
 
-    Friend Class WSAPImodel
-        Public Enum SendType
-            onmsg
-            onjoin
-            onleft
-            oncmd
-        End Enum
-
-        Friend Class SendModel
-            Public Sub New(ByVal _type As SendType, ByVal _target As String, ByVal _text As String)
-                operate = _type
-                target = _target
-                text = _text
-            End Sub
-
-            Public operate As SendType
-            Public target, text As String
-
-            Public Overrides Function ToString() As String
-                Dim feedback = JObject.FromObject(Me)
-                feedback("operate") = operate.ToString()
-                Return feedback.ToString(Formatting.None)
-            End Function
-        End Class
-
-        Public Enum ReceiveType
-            runcmd
-        End Enum
-
-        Friend Class ExecuteCmdModel
-            Public Sub New(ByVal receive As JObject)
-                operate = CType([Enum].Parse(GetType(ReceiveType), receive.Value(Of String)("operate")), ReceiveType)
-                cmd = receive.Value(Of String)("cmd").TrimStart()
-                msgid = receive.Value(Of String)("msgid")
-                Dim token = receive.Value(Of String)("passwd")
-                receive("passwd") = ""
-                Auth = token = GetMD5(Config.Password & Date.Now.ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None))
-                If Not Auth Then Auth = token = GetMD5(Config.Password & (Date.Now - (New TimeSpan(0, 0, 1, 0))).ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None))
-                If Not Auth Then WriteLineERR("密匙不匹配:", "收到密匙:" & token & vbTab & "本地密匙:" & GetMD5(Config.Password & Date.Now.ToString("yyyyMMddHHmm") & "@" & receive.ToString(Formatting.None)))
-            End Sub
-
-            Public Auth As Boolean = False
-            Public operate As ReceiveType
-            Public cmd, msgid As String
-            Private resultField As String = Nothing
-
-            Public Property Result As String
-                Get
-                    Return resultField
-                End Get
-                Set(ByVal value As String)
-                    resultField = value
-                    WSACT.SendToAll(GetFeedback())
-                End Set
-            End Property
-
-            Public waitTimes As Integer = 0
-
-            Public Function GetFeedback(ByVal text As String) As String
-                Result = text
-                Return GetFeedback()
-            End Function
-
-            Public Function GetFeedback() As String
-                Dim feedback As JObject = New JObject From {
-                    New JProperty("operate", "runcmd"),
-                    New JProperty("Auth", If(Auth, "PasswdMatch", "Failed")),
-                    New JProperty("text", If(Auth, Result.TrimEnd(Microsoft.VisualBasic.Strings.ChrW(13), Microsoft.VisualBasic.Strings.ChrW(10), " "c), "Password Not Match")),
-                    New JProperty("msgid", msgid)
-                }
-                Return feedback.ToString(Formatting.None)
-            End Function
-        End Class
-    End Class
 End Namespace

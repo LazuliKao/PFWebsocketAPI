@@ -130,6 +130,26 @@ namespace CSR
 		/// onLevelUp - 玩家升级
 		/// </summary>
 		public const string onLevelUp = "onLevelUp";
+		/// <summary>
+		/// onPistonPush - 活塞推方块事件
+		/// </summary>
+		public const string onPistonPush = "onPistonPush";
+		/// <summary>
+		/// onChestPair - 箱子合并事件
+		/// </summary>
+		public const string onChestPair = "onChestPair";
+		/// <summary>
+		/// onMobSpawnCheck - 生物生成检查事件
+		/// </summary>
+		public const string onMobSpawnCheck = "onMobSpawnCheck";
+		/// <summary>
+		/// onDropItem - 玩家丢物品事件
+		/// </summary>
+		public const string onDropItem = "onDropItem";
+		/// <summary>
+		/// onPickUpItem - 玩家捡起物品事件
+		/// </summary>
+		public const string onPickUpItem = "onPickUpItem";
 	}
 
 	public enum EventType {
@@ -161,7 +181,12 @@ namespace CSR
 		onAttack = 25,
 		onLevelExplode = 26,
 		onEquippedArmor = 27,
-		onLevelUp = 28
+		onLevelUp = 28,
+		onPistonPush = 29,
+		onChestPair = 30,
+		onMobSpawnCheck = 31,
+		onDropItem = 32,
+		onPickUpItem = 33
 	}
 
 	public enum ActMode {
@@ -355,6 +380,16 @@ namespace CSR
 						return EquippedArmorEvent.getFrom(e);
 					case EventType.onLevelUp:
 						return LevelUpEvent.getFrom(e);
+					case EventType.onPistonPush:
+						return PistonPushEvent.getFrom(e);
+					case EventType.onChestPair:
+						return ChestPairEvent.getFrom(e);
+					case EventType.onMobSpawnCheck:
+						return MobSpawnCheckEvent.getFrom(e);
+					case EventType.onPickUpItem:
+						return PickUpItemEvent.getFrom(e);
+					case EventType.onDropItem:
+						return DropItemEvent.getFrom(e);
 					default:
 						// do nothing
 						break;
@@ -1334,7 +1369,7 @@ namespace CSR
 	}
 
 	/// <summary>
-	/// 玩家切换护甲监听（不含主副手）<br/>
+	/// 玩家切换护甲监听（含主副手）<br/>
 	/// 拦截可否：否
 	/// </summary>
 	public class EquippedArmorEvent : PlayerEvent {
@@ -1343,6 +1378,7 @@ namespace CSR
 		protected int mslot;
 		protected short mitemaux;
 		protected short mitemid;
+		protected short mslottype;
 		/// <summary>
 		/// 物品名字
 		/// </summary>
@@ -1363,6 +1399,10 @@ namespace CSR
 		/// 物品ID
 		/// </summary>
 		public short itemid { get { return mitemid; } }
+		/// <summary>
+		/// 装备切换类型（0 - 护甲类，1 - 主副手类，其中主副手的格子位置不同）
+		/// </summary>
+		public short slottype { get { return mslottype; } }
 
 		public static new EquippedArmorEvent getFrom(Events e)
         {
@@ -1376,6 +1416,7 @@ namespace CSR
 			qae.mslot = Marshal.ReadInt32(s, 52);
 			qae.mitemaux = Marshal.ReadInt16(s, 56);
 			qae.mitemid = Marshal.ReadInt16(s, 58);
+			qae.mslottype = Marshal.ReadInt16(s, 60);
 			qae.mplayer = Marshal.ReadIntPtr(s, 64);
 			return qae;
 		}
@@ -1402,6 +1443,215 @@ namespace CSR
 			soe.mplayer = Marshal.ReadIntPtr(s, 40);
 			soe.mlv = Marshal.ReadInt32(s, 48);
 			return soe;
+		}
+	}
+
+	/// <summary>
+	/// 箱子合并监听<br/>
+	/// 拦截可否：是
+	/// </summary>
+	public class ChestPairEvent : BaseEvent
+	{
+		protected string mdimension;
+		protected string mblockname;
+		protected string mtblockname;
+		protected BPos3 mposition;
+		protected BPos3 mtposition;
+		protected int mdimensionid;
+		protected short mblockid;
+		protected short mtblockid;
+
+		/// <summary>
+		/// 方块所在维度
+		/// </summary>
+		public string dimension { get { return mdimension; } }
+		/// <summary>
+		/// 方块所处维度ID
+		/// </summary>
+		public int dimensionid { get { return mdimensionid; } }
+		/// <summary>
+		/// 方块名称
+		/// </summary>
+		public string blockname { get { return mblockname; } }
+		/// <summary>
+		/// 方块所在位置
+		/// </summary>
+		public BPos3 position { get { return mposition; } }
+		/// <summary>
+		/// 方块ID
+		/// </summary>
+		public short blockid { get { return mblockid; } }
+		/// <summary>
+		/// 目标方块名称
+		/// </summary>
+		public string targetblockname { get { return mtblockname; } }
+		/// <summary>
+		/// 目标方块所在位置
+		/// </summary>
+		public BPos3 targetposition { get { return mtposition; } }
+		/// <summary>
+		/// 目标方块ID
+		/// </summary>
+		public short targetblockid { get { return mtblockid; } }
+
+		protected void loadData(IntPtr s)
+        {
+			// 此处为转换过程
+			mdimension = StrTool.readUTF8str((IntPtr)Marshal.ReadInt64(s, 0));
+			mblockname = StrTool.readUTF8str((IntPtr)Marshal.ReadInt64(s, 8));
+			mtblockname = StrTool.readUTF8str((IntPtr)Marshal.ReadInt64(s, 16));
+			mposition = (BPos3)Marshal.PtrToStructure(s + 24, typeof(BPos3));
+			mtposition = (BPos3)Marshal.PtrToStructure(s + 36, typeof(BPos3));
+			mdimensionid = Marshal.ReadInt32(s, 48);
+			mblockid = Marshal.ReadInt16(s, 52);
+			mtblockid = Marshal.ReadInt16(s, 54);
+		}
+		public static new ChestPairEvent getFrom(Events e)
+		{
+			var pe = createHead(e, EventType.onChestPair, typeof(ChestPairEvent)) as ChestPairEvent;
+			if (pe == null)
+				return pe;
+			IntPtr s = e.data;  // 此处为转换过程
+			pe.loadData(s);
+			return pe;
+		}
+	}
+	/// <summary>
+	/// 活塞推方块监听<br/>
+	/// 拦截可否：是
+	/// </summary>
+	public class PistonPushEvent : ChestPairEvent
+	{
+		protected byte mdirection;
+		/// <summary>
+		/// 朝向
+		/// </summary>
+		public byte direction { get { return mdirection; } }
+		public static new PistonPushEvent getFrom(Events e)
+		{
+			var pe = createHead(e, EventType.onPistonPush, typeof(PistonPushEvent)) as PistonPushEvent;
+			if (pe == null)
+				return pe;
+			IntPtr s = e.data;  // 此处为转换过程
+			pe.loadData(s);
+			pe.mdirection = Marshal.ReadByte(s, 56);
+			return pe;
+		}
+	}
+	/// <summary>
+	/// 生物生成规则检查监听<br/>
+	/// 拦截可否：是
+	/// </summary>
+	public class MobSpawnCheckEvent : BaseEvent
+    {
+		protected string mmobname;
+		protected string mdimension;
+		protected string mmobtype;
+		protected Vec3 mXYZ;
+		protected int mdimensionid;
+		protected IntPtr mmob;
+		/// <summary>
+		/// 生物名称
+		/// </summary>
+		public string mobname { get { return mmobname; } }
+		/// <summary>
+		/// 生物所在维度
+		/// </summary>
+		public string dimension { get { return mdimension; } }
+		/// <summary>
+		/// 生物类型
+		/// </summary>
+		public string mobtype { get { return mmobtype; } }
+		/// <summary>
+		/// 生物所在位置
+		/// </summary>
+		public Vec3 XYZ { get { return mXYZ; } }
+		/// <summary>
+		/// 生物所处维度ID
+		/// </summary>
+		public int dimensionid { get { return mdimensionid; } }
+		/// <summary>
+		/// 生物指针
+		/// </summary>
+		public IntPtr mobPtr { get { return mmob; } }
+		public static new MobSpawnCheckEvent getFrom(Events e)
+		{
+			var pe = createHead(e, EventType.onMobSpawnCheck, typeof(MobSpawnCheckEvent)) as MobSpawnCheckEvent;
+			if (pe == null)
+				return pe;
+			IntPtr s = e.data;  // 此处为转换过程
+			pe.mmobname = StrTool.readUTF8str((IntPtr)Marshal.ReadInt64(s));
+			pe.mdimension = StrTool.readUTF8str((IntPtr)Marshal.ReadInt64(s, 8));
+			pe.mmobtype = StrTool.readUTF8str((IntPtr)Marshal.ReadInt64(s, 16));
+			pe.mXYZ = (Vec3)Marshal.PtrToStructure(s + 24, typeof(Vec3));
+			pe.mdimensionid = Marshal.ReadInt32(s, 36);
+			pe.mmob = (IntPtr)Marshal.ReadInt64(s, 40);
+			return pe;
+		}
+	}
+
+	public class PickUpItemEvent : PlayerEvent
+    {
+		protected string mitemname;
+		protected short mitemid;
+		protected short mitemaux;
+		/// <summary>
+		/// 物品名称
+		/// </summary>
+		public string itemname { get { return mitemname; } }
+		/// <summary>
+		/// 物品ID
+		/// </summary>
+		public short itemid { get { return mitemid; } }
+		/// <summary>
+		/// 物品特殊值
+		/// </summary>
+		public short itemaux { get { return mitemaux; } }
+
+		public static new PickUpItemEvent getFrom(Events e)
+		{
+			var puie = createHead(e, EventType.onPickUpItem, typeof(PickUpItemEvent)) as PickUpItemEvent;
+			if (puie == null)
+				return null;
+			IntPtr s = e.data;  // 此处为转换过程
+			puie.loadData(s);
+			puie.mitemname = StrTool.readUTF8str((IntPtr)Marshal.ReadInt64(s, 40));
+			puie.mitemid = Marshal.ReadInt16(s, 48);
+			puie.mitemaux = Marshal.ReadInt16(s, 50);
+			puie.mplayer = Marshal.ReadIntPtr(s, 56);
+			return puie;
+		}
+	}
+
+	public class DropItemEvent : PlayerEvent {
+		protected string mitemname;
+		protected short mitemid;
+		protected short mitemaux;
+		/// <summary>
+		/// 物品名称
+		/// </summary>
+		public string itemname { get { return mitemname; } }
+		/// <summary>
+		/// 物品ID
+		/// </summary>
+		public short itemid { get { return mitemid; } }
+		/// <summary>
+		/// 物品特殊值
+		/// </summary>
+		public short itemaux { get { return mitemaux; } }
+
+		public static new DropItemEvent getFrom(Events e)
+		{
+			var puie = createHead(e, EventType.onDropItem, typeof(DropItemEvent)) as DropItemEvent;
+			if (puie == null)
+				return null;
+			IntPtr s = e.data;  // 此处为转换过程
+			puie.loadData(s);
+			puie.mitemname = StrTool.readUTF8str((IntPtr)Marshal.ReadInt64(s, 40));
+			puie.mitemid = Marshal.ReadInt16(s, 48);
+			puie.mitemaux = Marshal.ReadInt16(s, 50);
+			puie.mplayer = Marshal.ReadIntPtr(s, 56);
+			return puie;
 		}
 	}
 }

@@ -91,7 +91,24 @@ Namespace PFWebsocketBase
                 End Try
             Next
         End Sub
-        Public Sub Start(ByVal OnMessage As Action(Of String))
+        Public Sub SendToCon(con As Object, sendMsg As String)
+            Dim TargetConnection = wsConnections.Find(Function(l) l.connection Is con)
+            Try
+                For index = 1 To 200
+                    If TargetConnection.avaliable Then
+                        TargetConnection.avaliable = False
+                        Exit For
+                    End If
+                    Thread.Sleep(50)
+                Next
+                TargetConnection.connection.Send(sendMsg)
+                TargetConnection.avaliable = True
+                If Not Config.QuietConsole Then WriteLine("Send", sendMsg)
+            Catch ex As Exception
+                WriteLineERR($"Server发送到Client({CType(con, Fleck.IWebSocketConnection).ConnectionInfo.Id})失败", ex)
+            End Try
+        End Sub
+        Public Sub Start(ByVal OnMessage As Action(Of String, Object))
             If Config.EnableDebugOutput Then
                 Fleck.FleckLog.LogAction = Sub(level, msg, ex)
                                                If level = Fleck.LogLevel.Error Then
@@ -114,7 +131,7 @@ Namespace PFWebsocketBase
             Server.Start(Sub(connection)
                              connection.OnMessage =
                              Sub(msg)
-                                 OnMessage.Invoke(msg)
+                                 OnMessage.Invoke(msg, connection)
                                  If Not Config.QuietConsole Then WriteLine("receive", msg)
                              End Sub
                              connection.OnOpen =
