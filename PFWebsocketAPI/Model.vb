@@ -27,10 +27,13 @@ Namespace PFWebsocketAPI
             Try
                 ReadPack(message, True, con)
             Catch ex As JsonReaderException
-                SendToCon(con, New CauseDecodeFailed("格式错误:" & ex.Message).ToString)
+                Dim sendData = New CauseDecodeFailed("格式错误:" & ex.Message).ToString
+                If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                SendToCon(con, sendData)
             Catch ex As Exception
-                SendToCon(con, New CauseDecodeFailed("解析错误:" & ex.Message).ToString)
-                WriteLineERR("解析错误", ex.ToString)
+                Dim sendData = New CauseDecodeFailed("解析错误:" & ex.Message).ToString
+                If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                SendToCon(con, sendData)
             End Try
         End Sub
         Friend Sub ReadPackNext(message As String, con As Object)
@@ -78,7 +81,9 @@ Namespace PFWebsocketAPI
                         If .params.cmd.StartsWith("op ") OrElse .params.cmd.StartsWith("execute") AndAlso .params.cmd.IndexOf("op ") <> -1 Then
                             fb.params.result = "出于安全考虑，禁止远程执行op命令"
                             WriteLine("出于安全考虑，禁止远程执行op命令")
-                            SendToCon(fb.ToString, con) '直接返回
+                            Dim sendData = fb.ToString
+                            If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                            SendToCon(con, sendData) '直接返回
                         End If
                         cmdQueue.Enqueue(fb)
                         CmdTimer_Elapsed(cmdTimer, Nothing)
@@ -122,8 +127,7 @@ Namespace PFWebsocketAPI.Model
             params = GetParams(Of ParamMap)(json)
         End Sub
         Friend Sub New(mode As EncryptionMode, from As String, password As String)
-            params.mode = mode
-            params.raw = SimpleAES.AES256.Encrypt(params.raw, password)
+            params = New ParamMap With {.mode = mode, .raw = SimpleAES.AES256.Encrypt(from, password)}
         End Sub
         Public Function Decode(password As String) As String '解密params.raw中的内容并返回
             Dim decoded = SimpleAES.AES256.Decrypt(params.raw, password)

@@ -115,6 +115,7 @@ Public Class ConfigModel
     Public PlayerMessageCallback As Boolean = True
     Public PlayerCmdCallback As Boolean = True
     Public QuietConsole As Boolean = False
+    Public EncryptDataSent As Boolean = False
     Public Overrides Function ToString() As String
         Return JObject.FromObject(Me).ToString(Formatting.None)
     End Function

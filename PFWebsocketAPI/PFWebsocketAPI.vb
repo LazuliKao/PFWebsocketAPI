@@ -159,7 +159,9 @@ Namespace PFWebsocketAPI
             End Get
             Set(value As CauseRuncmdFeedback)
                 If _InvokingCmd IsNot Nothing Then
-                    SendToCon(_InvokingCmd.params.con, _InvokingCmd.ToString)
+                    Dim sendData = _InvokingCmd.ToString
+                    If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                    SendToCon(_InvokingCmd.params.con, sendData)
                 End If
                 _InvokingCmd = value
             End Set
@@ -317,8 +319,9 @@ Namespace PFWebsocketAPI
                                                                          Dim e = TryCast(BaseEvent.getFrom(eventraw), LoadNameEvent)
                                                                          Task.Run(Sub()
                                                                                       Try
-                                                                                          Dim sendData = New Model.CauseJoin(e.playername, e.xuid, e.uuid, GetPlayerIP(e.playerPtr, True))
-                                                                                          WSACT.SendToAll(sendData.ToString())
+                                                                                          Dim sendData = New CauseJoin(e.playername, e.xuid, e.uuid, GetPlayerIP(e.playerPtr, True)).ToString
+                                                                                          If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                                                                                          SendToAll(sendData)
                                                                                       Catch err As Exception
                                                                                           WriteLineERR("PlayerJoinCallback", err)
                                                                                       End Try
@@ -335,8 +338,9 @@ Namespace PFWebsocketAPI
                                                                            Dim e = TryCast(BaseEvent.getFrom(eventraw), PlayerLeftEvent)
                                                                            Task.Run(Sub()
                                                                                         Try
-                                                                                            Dim sendData = New Model.CauseLeft(e.playername, e.xuid, e.uuid, GetPlayerIP(e.playerPtr))
-                                                                                            WSACT.SendToAll(sendData.ToString())
+                                                                                            Dim sendData = New CauseLeft(e.playername, e.xuid, e.uuid, GetPlayerIP(e.playerPtr)).ToString
+                                                                                            If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                                                                                            SendToAll(sendData)
                                                                                         Catch err As Exception
                                                                                             WriteLineERR("PlayerLeftCallback", err)
                                                                                         End Try
@@ -353,8 +357,9 @@ Namespace PFWebsocketAPI
                                                                              Dim e = TryCast(BaseEvent.getFrom(eventraw), InputCommandEvent)
                                                                              Task.Run(Sub()
                                                                                           Try
-                                                                                              Dim sendData = New Model.CauseCmd(e.playername, e.cmd)
-                                                                                              WSACT.SendToAll(sendData.ToString())
+                                                                                              Dim sendData = New CauseCmd(e.playername, e.cmd).ToString
+                                                                                              If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                                                                                              SendToAll(sendData)
                                                                                           Catch err As Exception
                                                                                               WriteLineERR("PlayerCmdCallback", err)
                                                                                           End Try
@@ -371,8 +376,9 @@ Namespace PFWebsocketAPI
                                                                           Dim e = TryCast(BaseEvent.getFrom(eventraw), InputTextEvent)
                                                                           Task.Run(Sub()
                                                                                        Try
-                                                                                           Dim sendData = New Model.CauseChat(e.playername, e.msg)
-                                                                                           WSACT.SendToAll(sendData.ToString())
+                                                                                           Dim sendData = New CauseChat(e.playername, e.msg).ToString
+                                                                                           If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                                                                                           SendToAll(sendData)
                                                                                        Catch err As Exception
                                                                                            WriteLineERR("PlayerMessageCallback", err)
                                                                                        End Try
