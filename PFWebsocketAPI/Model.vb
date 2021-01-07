@@ -27,7 +27,7 @@ Namespace PFWebsocketAPI
             Try
                 ReadPack(message, True, con)
             Catch ex As JsonReaderException
-                Dim sendData = New CauseDecodeFailed("格式错误:" & ex.Message).ToString
+                Dim sendData = New CauseDecodeFailed("JSON格式错误:" & ex.Message).ToString
                 If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
                 SendToCon(con, sendData)
             Catch ex As Exception
@@ -36,19 +36,19 @@ Namespace PFWebsocketAPI
                 SendToCon(con, sendData)
             End Try
         End Sub
-        Friend Sub ReadPackNext(message As String, con As Object)
-            ReadPack(message, False, con)
+        Friend Sub ReadPackNext(message As String, con As Object) '继续解析数据包（如解密后）
+            ReadPack(message, False, con) 'False即表示不是第一层级的数据包
         End Sub
         Friend Sub ReadPack(message As String, IsFirstLayer As Boolean, con As Object)
             Dim jobj As JObject = JObject.Parse(message)
-            Select Case [Enum].Parse(GetType(PackType), jobj.Value(Of String)("type"), True)
+            Select Case [Enum].Parse(GetType(PackType), jobj.Value(Of String)("type"), True)'解析type对象，判断基础类型
                 Case PackType.encrypted '作为加密包进行解密
                     ReadEncryptedPack(jobj, IsFirstLayer, con)
                 Case PackType.pack '作为普通包解析
                     ReadOriginalPack(jobj, IsFirstLayer, con)
             End Select
         End Sub
-        Friend Sub ReadEncryptedPack(jobj As JObject, IsFirstLayer As Boolean, con As Object)
+        Friend Sub ReadEncryptedPack(jobj As JObject, IsFirstLayer As Boolean, con As Object) '读取加密包
             With New EncryptedPack(jobj)
 #If DEBUG Then
                 WriteLine($"解析{ .params.mode}加密包>元数据:{ .params.raw}")
@@ -65,7 +65,7 @@ Namespace PFWebsocketAPI
                 ReadPackNext(decoded, con) '嵌套方法
             End With
         End Sub
-        Friend Sub ReadOriginalPack(jobj As JObject, IsFirstLayer As Boolean, con As Object)
+        Friend Sub ReadOriginalPack(jobj As JObject, IsFirstLayer As Boolean, con As Object) '读取普通包
 #If Not DEBUG Then'调试状态允许执行未加密的权限包
             If IsFirstLayer Then '判断初始包，如果是未加密的初始包则不允许执行
                 Dim fb = New CauseInvalidRequest("未加密的初始包不予执行！")
@@ -76,7 +76,7 @@ Namespace PFWebsocketAPI
 #End If
             Select Case [Enum].Parse(GetType(ClientActionType), jobj.Value(Of String)("action"), True)
                 Case ClientActionType.runcmdrequest
-                    With New ActionRunCmd(jobj, con)
+                    With New ActionRunCmd(jobj, con) '通过加载后的json初始化Action
                         Dim fb = .GetFeedback()
                         If .params.cmd.StartsWith("op ") OrElse .params.cmd.StartsWith("execute") AndAlso .params.cmd.IndexOf("op ") <> -1 Then
                             fb.params.result = "出于安全考虑，禁止远程执行op命令"
@@ -90,11 +90,9 @@ Namespace PFWebsocketAPI
                         If Not cmdTimer.Enabled Then cmdTimer.Start()
                     End With
                 Case ClientActionType.broadcast
-
-
+                    '待实现
                 Case ClientActionType.tellraw
-
-
+                    '待实现
             End Select
         End Sub
     End Module
@@ -109,32 +107,32 @@ Namespace PFWebsocketAPI.Model
     Public Enum EncryptionMode '加密模式
         AES256
     End Enum
-    Friend MustInherit Class PackBase
+    Friend MustInherit Class PackBase '基础类
         <JsonProperty(Order:=-3)>
-        Public MustOverride ReadOnly Property type As PackType
+        Public MustOverride ReadOnly Property type As PackType '包类型
         Public Overrides Function ToString() As String
-            Return JsonConvert.SerializeObject(Me)
+            Return JsonConvert.SerializeObject(Me) '基类的转化为String重写方法
         End Function
         Public Function GetParams(Of T)(json As JObject) As T
-            Return json("params").ToObject(Of T)
+            Return json("params").ToObject(Of T) '基类的获取参数表方法
         End Function
     End Class
     Friend Class EncryptedPack    '加密包
         Inherits PackBase
         Public Overrides ReadOnly Property type As PackType = PackType.encrypted
         Public params As ParamMap
-        Friend Sub New(json As JObject)
-            params = GetParams(Of ParamMap)(json)
+        Friend Sub New(json As JObject) '通过已有json初始化对象（通常用作传入解析）
+            params = GetParams(Of ParamMap)(json) '通过基类该方法获取参数表
         End Sub
-        Friend Sub New(mode As EncryptionMode, from As String, password As String)
+        Friend Sub New(mode As EncryptionMode, from As String, password As String) '通过参数初始化包（通常用作发送前）
             params = New ParamMap With {.mode = mode, .raw = SimpleAES.AES256.Encrypt(from, password)}
         End Sub
         Public Function Decode(password As String) As String '解密params.raw中的内容并返回
-            Dim decoded = SimpleAES.AES256.Decrypt(params.raw, password)
+            Dim decoded = SimpleAES.AES256.Decrypt(params.raw, password) 'AES256解密
             If String.IsNullOrEmpty(decoded) Then Throw New Exception("AES256 Decode failed!")
             Return decoded
         End Function
-        Friend Class ParamMap
+        Friend Class ParamMap '对象参数表
             Public mode As EncryptionMode
             Public raw As String
         End Class
