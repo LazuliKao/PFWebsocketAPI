@@ -10,7 +10,11 @@ Namespace PFWebsocketAPI
             If IPList.ContainsKey(ptr) Then
                 If refresh Then IPList(ptr) = New CSR.CsPlayer(Program.api, ptr).IpPort
             Else
-                IPList.Add(ptr, New CSR.CsPlayer(Program.api, ptr).IpPort)
+                Try
+                    IPList.Add(ptr, New CSR.CsPlayer(Program.api, ptr).IpPort)
+                Catch ex As System.NullReferenceException
+                    IPList.Add(ptr, "unknown")
+                End Try
             End If
             Return IPList(ptr)
         End Function
