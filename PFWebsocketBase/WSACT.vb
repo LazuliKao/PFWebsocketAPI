@@ -129,24 +129,28 @@ Namespace PFWebsocketBase
             End If
             Server.RestartAfterListenError = True
             Server.Start(Sub(connection)
-                             connection.OnMessage =
-                             Sub(msg)
-                                 OnMessage.Invoke(msg, connection)
-                                 If Not Config.QuietConsole Then WriteLine("receive", msg)
-                             End Sub
-                             connection.OnOpen =
-                             Sub()
-                                 wsConnections.Add(New WebsocketConnection(connection))
-                                 WriteLine($"与{connection.ConnectionInfo.Id}({connection.ConnectionInfo.ClientIpAddress}:{connection.ConnectionInfo.ClientPort})建立连接")
-                             End Sub
-                             connection.OnClose =
-                             Sub()
-                                 wsConnections.Remove(New WebsocketConnection(connection))
-                                 WriteLine($"与{connection.ConnectionInfo.Id}({connection.ConnectionInfo.ClientIpAddress}:{connection.ConnectionInfo.ClientPort})断开连接")
-                             End Sub
-                             'connection.OnError =
-                             'Sub([error]) 
-                             'End Sub
+                             connection.OnMessage = Sub(msg)
+                                                        OnMessage.Invoke(msg, connection)
+                                                        If Not Config.QuietConsole Then WriteLine("receive", msg)
+                                                    End Sub
+                             connection.OnOpen = Sub()
+                                                     wsConnections.Add(New WebsocketConnection(connection))
+                                                     WriteLine($"与{connection.ConnectionInfo.Id}({connection.ConnectionInfo.ClientIpAddress}:{connection.ConnectionInfo.ClientPort})建立连接")
+                                                 End Sub
+                             connection.OnClose = Sub()
+                                                      wsConnections.RemoveAll(Function(l) l.connection Is connection)
+#If DEBUG Then
+                                                     WriteLine(wsConnections.Count)
+#End If
+                                                      WriteLine($"与{connection.ConnectionInfo.Id}({connection.ConnectionInfo.ClientIpAddress}:{connection.ConnectionInfo.ClientPort})断开连接")
+                                                  End Sub
+                             connection.OnError = Sub(err)
+                                                      WriteLineERR($"与{connection.ConnectionInfo.Id}({connection.ConnectionInfo.ClientIpAddress}:{connection.ConnectionInfo.ClientPort})连接出错：", err)
+                                                      wsConnections.RemoveAll(Function(l) l.connection Is connection)
+#If DEBUG Then
+                                                      WriteLine(wsConnections.Count)
+#End If
+                                                  End Sub
                          End Sub)
         End Sub
     End Module

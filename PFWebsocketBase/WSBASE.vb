@@ -11,7 +11,7 @@ Imports PFWebsocketWindows
 
 Namespace PFWebsocketBase
     Public Module WSBASE
-        Public wsConnections As List(Of WebsocketConnection) = New List(Of WebsocketConnection)()
+        Public Property wsConnections As List(Of WebsocketConnection) = New List(Of WebsocketConnection)()
         Public Class WebsocketConnection
             Public connection As IWebSocketConnection
             Public avaliable As Boolean = True
