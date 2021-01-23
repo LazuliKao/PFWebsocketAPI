@@ -101,7 +101,41 @@ Namespace PFWebsocketAPI
         End Sub
     End Module
 End Namespace
+
+
+
+
+
+
+
+
 Namespace PFWebsocketAPI.Model
+    Public Module StringTools
+        Public Function GetMD5(ByVal sDataIn As String) As String
+            Dim md5 As New Security.Cryptography.MD5CryptoServiceProvider
+            Dim bytValue, bytHash As Byte()
+            bytValue = Text.Encoding.UTF8.GetBytes(sDataIn)
+            bytHash = md5.ComputeHash(bytValue)
+            md5.Clear()
+            Dim sTemp = ""
+            For i = 0 To bytHash.Length - 1
+                sTemp += bytHash(i).ToString("X").PadLeft(2, "0"c)
+            Next
+            Return sTemp.ToUpper()
+        End Function
+        Public Function AESEncrypt(content As String, password As String) As String
+            Dim md5 = GetMD5(password)
+            Dim iv As String = md5.Substring(16)
+            Dim key As String = md5.Remove(16)
+            Return EasyEncryption.AES.Encrypt(content, key, iv)
+        End Function
+        Public Function AESDecrypt(content As String, password As String) As String
+            Dim md5 = GetMD5(password)
+            Dim iv As String = md5.Substring(16)
+            Dim key As String = md5.Remove(16)
+            Return EasyEncryption.AES.Decrypt(content, key, iv)
+        End Function
+    End Module
     <JsonConverter(GetType(Converters.StringEnumConverter))>
     Public Enum PackType '基本包类型
         pack
@@ -109,7 +143,8 @@ Namespace PFWebsocketAPI.Model
     End Enum
     <JsonConverter(GetType(Converters.StringEnumConverter))>
     Public Enum EncryptionMode '加密模式
-        AES256
+        aes256
+        aes_cbc_pck7padding
     End Enum
     Friend MustInherit Class PackBase '基础类
         <JsonProperty(Order:=-3)>
@@ -123,18 +158,32 @@ Namespace PFWebsocketAPI.Model
     End Class
     Friend Class EncryptedPack    '加密包
         Inherits PackBase
+
         Public Overrides ReadOnly Property type As PackType = PackType.encrypted
         Public params As ParamMap
         Friend Sub New(json As JObject) '通过已有json初始化对象（通常用作传入解析）
             params = GetParams(Of ParamMap)(json) '通过基类该方法获取参数表
         End Sub
         Friend Sub New(mode As EncryptionMode, from As String, password As String) '通过参数初始化包（通常用作发送前）
-            params = New ParamMap With {.mode = mode, .raw = SimpleAES.AES256.Encrypt(from, password)}
+            Dim encrypted As String = ""
+            Select Case mode'不同加密模式不同操作
+                Case EncryptionMode.aes256
+                    encrypted = SimpleAES.AES256.Encrypt(from, password)
+                Case EncryptionMode.aes_cbc_pck7padding
+                    encrypted = AESEncrypt(from, password)
+            End Select
+            params = New ParamMap With {.mode = mode, .raw = encrypted}
         End Sub
         Public Function Decode(password As String) As String '解密params.raw中的内容并返回
-            Dim decoded = SimpleAES.AES256.Decrypt(params.raw, password) 'AES256解密
-            If String.IsNullOrEmpty(decoded) Then Throw New Exception("AES256 Decode failed!")
-            Return decoded
+            Dim decrypted As String = ""
+            Select Case params.mode'不同加密模式不同操作
+                Case EncryptionMode.aes256
+                    decrypted = SimpleAES.AES256.Decrypt(params.raw, password)
+                Case EncryptionMode.aes_cbc_pck7padding
+                    decrypted = AESDecrypt(params.raw, password)
+            End Select
+            If String.IsNullOrEmpty(decrypted) Then Throw New Exception("AES256 Decode failed!")
+            Return decrypted
         End Function
         Friend Class ParamMap '对象参数表
             Public mode As EncryptionMode
@@ -288,6 +337,7 @@ Namespace PFWebsocketAPI.Model
         'Friend Sub New(json As JObject)
         '    params = GetParams(Of ParamMap)(json)
         'End Sub
+
         Friend Sub New(json As JObject, con As Object)
             params = GetParams(Of ParamMap)(json)
             params.con = con

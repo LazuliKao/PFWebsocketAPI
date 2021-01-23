@@ -224,7 +224,7 @@ Namespace PFWebsocketAPI
                         "████████████████████████████",
                         "正在裝載PFWebsocketAPI", "作者        gxh2004",
                         "版本信息    v" & Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-                        "适用于bds1.16(CSRV0.1.16.40.2编译)", "如版本不同可能存在问题", "当前CSRunnerAPI版本:" & api.VERSION,
+                        "适用于bds1.16(CSRV0.1.16.201编译)", "如版本不同可能存在问题", "当前CSRunnerAPI版本:" & api.VERSION,
                         "配置文件位于""[BDS目录]\plugins\PFWebsocket\config.json""",
                         "请修改配置文件后使用，尤其是Password和endpoint",
                         "以免被他人入侵",
