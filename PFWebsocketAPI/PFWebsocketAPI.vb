@@ -160,7 +160,7 @@ Namespace PFWebsocketAPI
             Set(value As CauseRuncmdFeedback)
                 If _InvokingCmd IsNot Nothing Then
                     Dim sendData = _InvokingCmd.ToString
-                    If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                    If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.aes256, sendData, Config.Password).ToString
                     SendToCon(_InvokingCmd.params.con, sendData)
                 End If
                 _InvokingCmd = value
@@ -224,7 +224,7 @@ Namespace PFWebsocketAPI
                         "████████████████████████████",
                         "正在裝載PFWebsocketAPI", "作者        gxh2004",
                         "版本信息    v" & Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-                        "适用于bds1.16(CSRV0.1.16.201编译)", "如版本不同可能存在问题", "当前CSRunnerAPI版本:" & api.VERSION,
+                        "适用于bds1.16(CSRV0.1.16.201v7编译)", "如版本不同可能存在问题", "当前CSRunnerAPI版本:" & api.VERSION,
                         "配置文件位于""[BDS目录]\plugins\PFWebsocket\config.json""",
                         "请修改配置文件后使用，尤其是Password和endpoint",
                         "以免被他人入侵",
@@ -314,18 +314,18 @@ Namespace PFWebsocketAPI
                 If WSBASE.Config.PlayerJoinCallback Then
                     api.addAfterActListener(EventKey.onLoadName, Function(eventraw)
                                                                      Try
-                                                                         Return True
-                                                                     Finally
                                                                          Dim e = TryCast(BaseEvent.getFrom(eventraw), LoadNameEvent)
                                                                          Task.Run(Sub()
                                                                                       Try
                                                                                           Dim sendData = New CauseJoin(e.playername, e.xuid, e.uuid, GetPlayerIP(e.playerPtr, True)).ToString
-                                                                                          If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                                                                                          If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.aes256, sendData, Config.Password).ToString
                                                                                           SendToAll(sendData)
                                                                                       Catch err As Exception
                                                                                           WriteLineERR("PlayerJoinCallback", err)
                                                                                       End Try
                                                                                   End Sub)
+                                                                         Return True
+                                                                     Finally
                                                                      End Try
                                                                  End Function)
                     WriteLine("已开启PlayerJoinCallback监听")
@@ -333,18 +333,18 @@ Namespace PFWebsocketAPI
                 If WSBASE.Config.PlayerLeftCallback Then
                     api.addAfterActListener(EventKey.onPlayerLeft, Function(eventraw)
                                                                        Try
-                                                                           Return True
-                                                                       Finally
                                                                            Dim e = TryCast(BaseEvent.getFrom(eventraw), PlayerLeftEvent)
                                                                            Task.Run(Sub()
                                                                                         Try
                                                                                             Dim sendData = New CauseLeft(e.playername, e.xuid, e.uuid, GetPlayerIP(e.playerPtr)).ToString
-                                                                                            If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                                                                                            If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.aes256, sendData, Config.Password).ToString
                                                                                             SendToAll(sendData)
                                                                                         Catch err As Exception
                                                                                             WriteLineERR("PlayerLeftCallback", err)
                                                                                         End Try
                                                                                     End Sub)
+                                                                           Return True
+                                                                       Finally
                                                                        End Try
                                                                    End Function)
                     WriteLine("已开启PlayerLeftCallback监听")
@@ -352,18 +352,18 @@ Namespace PFWebsocketAPI
                 If WSBASE.Config.PlayerCmdCallback Then
                     api.addAfterActListener(EventKey.onInputCommand, Function(eventraw)
                                                                          Try
-                                                                             Return True
-                                                                         Finally
                                                                              Dim e = TryCast(BaseEvent.getFrom(eventraw), InputCommandEvent)
                                                                              Task.Run(Sub()
                                                                                           Try
                                                                                               Dim sendData = New CauseCmd(e.playername, e.cmd).ToString
-                                                                                              If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                                                                                              If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.aes256, sendData, Config.Password).ToString
                                                                                               SendToAll(sendData)
                                                                                           Catch err As Exception
                                                                                               WriteLineERR("PlayerCmdCallback", err)
                                                                                           End Try
                                                                                       End Sub)
+                                                                             Return True
+                                                                         Finally
                                                                          End Try
                                                                      End Function)
                     WriteLine("已开启PlayerCmdCallback监听")
@@ -371,18 +371,18 @@ Namespace PFWebsocketAPI
                 If WSBASE.Config.PlayerMessageCallback Then
                     api.addAfterActListener(EventKey.onInputText, Function(eventraw)
                                                                       Try
-                                                                          Return True
-                                                                      Finally
                                                                           Dim e = TryCast(BaseEvent.getFrom(eventraw), InputTextEvent)
                                                                           Task.Run(Sub()
                                                                                        Try
                                                                                            Dim sendData = New CauseChat(e.playername, e.msg).ToString
-                                                                                           If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                                                                                           If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.aes256, sendData, Config.Password).ToString
                                                                                            SendToAll(sendData)
                                                                                        Catch err As Exception
                                                                                            WriteLineERR("PlayerMessageCallback", err)
                                                                                        End Try
                                                                                    End Sub)
+                                                                          Return True
+                                                                      Finally
                                                                       End Try
                                                                   End Function)
                     WriteLine("已开启PlayerMessageCallback监听")

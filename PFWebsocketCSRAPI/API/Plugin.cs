@@ -18,24 +18,24 @@ namespace CSR
 		/// </summary>
 		public static MCCSAPI api { get { return mapi; } }
 		#region 插件统一调用接口，请勿随意更改
-		//public static int onServerStart(string pathandversion) {
-		//	string path = null, version = null;
-		//	bool commercial = false;
-		//	string [] pav = pathandversion.Split(',');
-		//	if (pav.Length > 1) {
-		//		path = pav[0];
-		//		version = pav[1];
-		//		commercial = (pav[pav.Length - 1] == "1");
-		//		mapi = new MCCSAPI(path, version, commercial);
-		//		if (mapi != null) {
-		//			onStart(mapi);
-		//			GC.KeepAlive(mapi);
-		//			return 0;
-		//		}
-		//	}
-		//	Console.WriteLine("Load failed.");
-		//	return -1;
-		//}
+		public static int onServerStart(string pathandversion) {
+			string path = null, version = null;
+			bool commercial = false;
+			string [] pav = pathandversion.Split(',');
+			if (pav.Length > 1) {
+				path = pav[0];
+				version = pav[1];
+				commercial = (pav[pav.Length - 1] == "1");
+				mapi = new MCCSAPI(path, version, commercial);
+				if (mapi != null) {
+					onStart(mapi);
+					GC.KeepAlive(mapi);
+					return 0;
+				}
+			}
+			Console.WriteLine("Load failed.");
+			return -1;
+		}
 		#endregion
 
 		~Plugin()
