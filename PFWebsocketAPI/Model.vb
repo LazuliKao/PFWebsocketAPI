@@ -278,12 +278,12 @@ Namespace PFWebsocketAPI.Model
             params = GetParams(Of ParamMap)(json)
         End Sub
         Friend Sub New(mobtype As String, mobname As String, dmcase As Integer, srctype As String, srcname As String, XYZ As Vec3)
-            params = New ParamMap With {.mobtype = mobtype, .mobname = mobname, .dmcase = dmcase, .srctype = srctype, .srcname = srcname, .XYZ = XYZ}
+            params = New ParamMap With {.mobtype = mobtype, .mobname = mobname, .dmcase = dmcase, .srctype = srctype, .srcname = srcname, .pos = XYZ}
         End Sub
         Public Overrides ReadOnly Property cause As ServerCauseType = ServerCauseType.mobdie
         Public params As ParamMap
         Friend Class ParamMap
-            Public mobtype, mobname As String, dmcase As Integer, srctype, srcname As String, XYZ As Vec3
+            Public mobtype, mobname As String, dmcase As Integer, srctype, srcname As String, pos As Vec3
         End Class
     End Class
     '命令返回

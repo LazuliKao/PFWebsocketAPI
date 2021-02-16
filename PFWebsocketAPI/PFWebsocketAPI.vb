@@ -393,14 +393,16 @@ Namespace PFWebsocketAPI
                                                                        Dim e = TryCast(BaseEvent.getFrom(eventraw), MobDieEvent)
                                                                        Task.Run(Sub()
                                                                                     Try
+                                                                                        If Not String.IsNullOrEmpty(e.mobname) Then
+                                                                                            Dim sendData = New CauseMobDie(e.mobtype, e.mobname, e.dmcase, e.srctype, e.srcname, New Model.Vec3 With {.x = e.XYZ.x, .y = e.XYZ.y, .z = e.XYZ.z}).ToString
+                                                                                            If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.aes256, sendData, Config.Password).ToString
+                                                                                            SendToAll(sendData)
+                                                                                        End If
                                                                                         'e.mobname
                                                                                         'e.mobtype
                                                                                         'e.dmcase
                                                                                         'e.srcname
                                                                                         'e.srctype
-                                                                                        Dim sendData = New CauseMobDie(e.mobtype, e.mobname, e.dmcase, e.srctype, e.srcname, New Model.Vec3 With {.x = e.XYZ.x, .y = e.XYZ.y, .z = e.XYZ.z}).ToString
-                                                                                        If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.aes256, sendData, Config.Password).ToString
-                                                                                        SendToAll(sendData)
                                                                                     Catch err As Exception
                                                                                         WriteLineERR("MobDieCallback", err)
                                                                                     End Try
