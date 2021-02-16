@@ -32,11 +32,11 @@ Namespace PFWebsocketAPI
                 ReadPack(message, True, con)
             Catch ex As JsonReaderException
                 Dim sendData = New CauseDecodeFailed("JSON格式错误:" & ex.Message).ToString
-                If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.aes256, sendData, Config.Password).ToString
                 SendToCon(con, sendData)
             Catch ex As Exception
                 Dim sendData = New CauseDecodeFailed("解析错误:" & ex.Message).ToString
-                If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.aes256, sendData, Config.Password).ToString
                 SendToCon(con, sendData)
             End Try
         End Sub
@@ -86,7 +86,7 @@ Namespace PFWebsocketAPI
                             fb.params.result = "出于安全考虑，禁止远程执行op命令"
                             WriteLine("出于安全考虑，禁止远程执行op命令")
                             Dim sendData = fb.ToString
-                            If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.AES256, sendData, Config.Password).ToString
+                            If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.aes256, sendData, Config.Password).ToString
                             SendToCon(con, sendData) '直接返回
                         End If
                         cmdQueue.Enqueue(fb)
@@ -136,6 +136,9 @@ Namespace PFWebsocketAPI.Model
             Return EasyEncryption.AES.Decrypt(content, key, iv)
         End Function
     End Module
+    Public Structure Vec3
+        Public x, y, z As Single
+    End Structure
     <JsonConverter(GetType(Converters.StringEnumConverter))>
     Public Enum PackType '基本包类型
         pack
@@ -202,6 +205,7 @@ Namespace PFWebsocketAPI.Model
         join
         left
         cmd
+        mobdie
         runcmdfeedback
         decodefailed
         invalidrequest
@@ -266,6 +270,20 @@ Namespace PFWebsocketAPI.Model
         Public params As ParamMap
         Friend Class ParamMap
             Public sender, text As String
+        End Class
+    End Class
+    Friend Class CauseMobDie
+        Inherits ServerPackBase
+        Friend Sub New(json As JObject)
+            params = GetParams(Of ParamMap)(json)
+        End Sub
+        Friend Sub New(mobtype As String, mobname As String, dmcase As Integer, srctype As String, srcname As String, XYZ As Vec3)
+            params = New ParamMap With {.mobtype = mobtype, .mobname = mobname, .dmcase = dmcase, .srctype = srctype, .srcname = srcname, .XYZ = XYZ}
+        End Sub
+        Public Overrides ReadOnly Property cause As ServerCauseType = ServerCauseType.mobdie
+        Public params As ParamMap
+        Friend Class ParamMap
+            Public mobtype, mobname As String, dmcase As Integer, srctype, srcname As String, XYZ As Vec3
         End Class
     End Class
     '命令返回

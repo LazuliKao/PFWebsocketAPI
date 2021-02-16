@@ -68,8 +68,10 @@ Partial Public Class Setup
                                 .PlayerCmdCallback = AdvancedPlayerCmdCallbackCallback.IsChecked = True,
                                 .PlayerJoinCallback = AdvancedPlayerJoinCallback.IsChecked = True,
                                 .PlayerLeftCallback = AdvancedPlayerLeftCallback.IsChecked = True,
+                                .MobDieCallback = AdvancedMobDieCallbackCallback.IsChecked = True,
                                 .PlayerMessageCallback = AdvancedPlayerMessageCallback.IsChecked = True,
-                                .EnableDebugOutput = AdvancedEnableDebugOutput.IsChecked = True
+                                .EnableDebugOutput = AdvancedEnableDebugOutput.IsChecked = True,
+                                .EncryptDataSent = AdvancedEncryptDataSent.IsChecked = True
                             }
             Catch
             End Try
@@ -114,6 +116,7 @@ Public Class ConfigModel
     Public PlayerJoinCallback As Boolean = True
     Public PlayerMessageCallback As Boolean = True
     Public PlayerCmdCallback As Boolean = True
+    Public MobDieCallback As Boolean = True
     Public QuietConsole As Boolean = False
     Public EncryptDataSent As Boolean = False
     Public Overrides Function ToString() As String

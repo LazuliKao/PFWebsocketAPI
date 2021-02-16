@@ -386,6 +386,30 @@ Namespace PFWebsocketAPI
                                                                       End Try
                                                                   End Function)
                     WriteLine("已开启PlayerMessageCallback监听")
+                End If
+                If WSBASE.Config.MobDieCallback Then
+                    api.addAfterActListener(EventKey.onMobDie, Function(eventraw)
+                                                                   Try
+                                                                       Dim e = TryCast(BaseEvent.getFrom(eventraw), MobDieEvent)
+                                                                       Task.Run(Sub()
+                                                                                    Try
+                                                                                        'e.mobname
+                                                                                        'e.mobtype
+                                                                                        'e.dmcase
+                                                                                        'e.srcname
+                                                                                        'e.srctype
+                                                                                        Dim sendData = New CauseMobDie(e.mobtype, e.mobname, e.dmcase, e.srctype, e.srcname, New Model.Vec3 With {.x = e.XYZ.x, .y = e.XYZ.y, .z = e.XYZ.z}).ToString
+                                                                                        If Config.EncryptDataSent Then sendData = New EncryptedPack(EncryptionMode.aes256, sendData, Config.Password).ToString
+                                                                                        SendToAll(sendData)
+                                                                                    Catch err As Exception
+                                                                                        WriteLineERR("MobDieCallback", err)
+                                                                                    End Try
+                                                                                End Sub)
+                                                                       Return True
+                                                                   Finally
+                                                                   End Try
+                                                               End Function)
+                    WriteLine("已开启MobDieCallback监听")
 #End Region
                 End If
             Catch err As Exception

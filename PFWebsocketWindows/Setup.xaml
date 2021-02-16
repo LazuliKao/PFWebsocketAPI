@@ -207,12 +207,20 @@
                                         <TextBlock Text="PlayerCmdCallback"/>
                                     </DockPanel>
                                     <DockPanel >
+                                        <ToggleButton DockPanel.Dock="Right" IsChecked="True" x:Name="AdvancedMobDieCallbackCallback"/>
+                                        <TextBlock Text="MobDieCallback"/>
+                                    </DockPanel>
+                                    <DockPanel >
                                         <ToggleButton DockPanel.Dock="Right" x:Name="AdvancedEnableDebugOutput"/>
                                         <TextBlock Text="EnableDebugOutput"/>
                                     </DockPanel>
                                     <DockPanel >
                                         <ToggleButton DockPanel.Dock="Right" x:Name="AdvancedQuietConsole"/>
                                         <TextBlock Text="QuietConsole"/>
+                                    </DockPanel> 
+                                    <DockPanel >
+                                        <ToggleButton DockPanel.Dock="Right" x:Name="AdvancedEncryptDataSent"/>
+                                        <TextBlock Text="EncryptDataSent"/>
                                     </DockPanel>
                                 </StackPanel>
                             </StackPanel>
